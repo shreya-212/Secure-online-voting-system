@@ -1,0 +1,16 @@
+# Environments
+.venv/
+pyvenv.cfg
+.lock
+CACHEDIR.TAG
+
+# Python cache
+**/__pycache__/
+*.pyc
+
+# Database
+db.sqlite3
+
+# OS Junk
+.DS_Store
+Thumbs.db
