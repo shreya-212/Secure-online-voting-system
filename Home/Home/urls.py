@@ -24,4 +24,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/refresh/',TokenRefreshView.as_view()),
     path('api/auth/',include('accounts.urls')),
+    path('helo',hello)
 ]+static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
