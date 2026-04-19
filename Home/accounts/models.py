@@ -59,3 +59,38 @@ class OTP(models.Model):
 
     def __str__(self):
         return f"OTP for {self.user.email} - {self.code}"
+
+
+class VoterVerification(models.Model):
+    """Stores voter identity verification submission per user."""
+
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    )
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='voter_verification')
+    submitted_voter_id = models.CharField(max_length=30, blank=True)
+    aadhaar_last4 = models.CharField(max_length=4, blank=True, help_text='Last 4 digits only')
+    full_name_on_card = models.CharField(max_length=150, blank=True)
+    dob_on_card = models.DateField(null=True, blank=True)
+    card_image = models.ImageField(upload_to='voter_cards/', null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'voter_verifications'
+
+    def __str__(self):
+        return f"Verification for {self.user.email} — {self.status}"
+
+    def approve(self):
+        """Approve verification and mark user as verified."""
+        self.status = 'approved'
+        self.save()
+        self.user.is_verified = True
+        if self.submitted_voter_id:
+            self.user.voter_id = self.submitted_voter_id
+        self.user.save()

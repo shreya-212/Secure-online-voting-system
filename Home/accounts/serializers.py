@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import User, OTP
+from .models import User, OTP, VoterVerification
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -68,3 +68,32 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'first_name', 'last_name', 'voter_id', 'role', 'state', 'is_verified']
+
+
+class VoterVerificationSerializer(serializers.ModelSerializer):
+    """Serializer for submitting voter identity details."""
+    dob_on_card = serializers.DateField(required=False, allow_null=True)
+    card_image = serializers.ImageField(required=False, allow_null=True)
+
+    class Meta:
+        model = VoterVerification
+        fields = [
+            'submitted_voter_id', 'aadhaar_last4', 'full_name_on_card',
+            'dob_on_card', 'card_image',
+        ]
+
+    def validate_aadhaar_last4(self, value):
+        if value and (not value.isdigit() or len(value) != 4):
+            raise serializers.ValidationError('Enter exactly 4 digits of your Aadhaar number.')
+        return value
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        # Update or create verification record
+        instance, _ = VoterVerification.objects.update_or_create(
+            user=user,
+            defaults={**validated_data, 'status': 'pending'},
+        )
+        # Auto-approve (in production replace with manual admin review)
+        instance.approve()
+        return instance

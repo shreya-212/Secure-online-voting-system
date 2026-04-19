@@ -80,7 +80,10 @@
         <div class="card mb-3" id="profile-card">
             <div class="card-header">
                 <h3 class="card-title">👤 Your Profile</h3>
-                <button class="btn btn-sm btn-secondary" onclick="toggleProfileEdit()">Edit</button>
+                <div class="flex gap-2">
+                    <a href="/register-face/" class="btn btn-sm btn-primary" id="btn-register-face" style="display:none;">📷 Face ID</a>
+                    <button class="btn btn-sm btn-secondary" onclick="toggleProfileEdit()">Edit</button>
+                </div>
             </div>
             <div id="profile-display">
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
@@ -167,6 +170,8 @@
 
                 if (!profile.is_verified) {
                     document.getElementById('verify-alert').classList.remove('hidden');
+                } else {
+                    document.getElementById('btn-register-face').style.display = 'inline-flex';
                 }
 
                 // Prefill edit form

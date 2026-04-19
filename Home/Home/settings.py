@@ -109,6 +109,12 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# ---------- OCR ----------
+
+# Path to Tesseract binary. Set TESSERACT_CMD env var on your machine.
+# Windows default: r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
+TESSERACT_CMD = os.environ.get('TESSERACT_CMD', '')
+
 # ---------- CORS ----------
 
 CORS_ALLOW_ALL_ORIGINS = True

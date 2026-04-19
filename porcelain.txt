@@ -1,0 +1,13 @@
+UU Home/Home/urls.py
+D  Home/accounts/__init__.py
+UD Home/accounts/admin.py
+UD Home/accounts/apps.py
+UD Home/accounts/migrations/0001_initial.py
+D  Home/accounts/migrations/__init__.py
+UD Home/accounts/models.py
+UD Home/accounts/serializers.py
+UD Home/accounts/urls.py
+UD Home/accounts/views.py
+?? conflicts.json
+?? porcelain.txt
+?? remotes.txt

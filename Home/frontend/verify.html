@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SecureVote — Verify your voter identity to participate in elections.">
+    <title>SecureVote — Identity Verification</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        :root {
+            --primary: #6C63FF;
+            --primary-dark: #5A52D5;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --error: #EF4444;
+            --bg: #0F0F1A;
+            --surface: rgba(255,255,255,0.05);
+            --surface-hover: rgba(255,255,255,0.08);
+            --border: rgba(255,255,255,0.1);
+            --text: #F1F5F9;
+            --text-muted: #94A3B8;
+            --glass: rgba(255,255,255,0.04);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            padding: 20px;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(108,99,255,0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(16,185,129,0.10) 0%, transparent 50%);
+        }
+
+        .verify-card {
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 560px;
+            padding: 40px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .verify-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .verify-icon {
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, var(--primary), var(--success));
+            border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 2rem;
+            box-shadow: 0 8px 24px rgba(108,99,255,0.4);
+        }
+
+        .verify-header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .verify-header p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 28px;
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 16px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(108,99,255,0.35);
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: var(--surface-hover);
+            color: var(--text);
+        }
+
+        /* Forms */
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .form-group { margin-bottom: 18px; }
+
+        .form-label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 7px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s, background 0.2s;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            background: rgba(108,99,255,0.08);
+        }
+
+        .form-input::placeholder { color: var(--text-muted); }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        /* Upload zone */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 14px;
+            padding: 36px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 18px;
+        }
+
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--primary);
+            background: rgba(108,99,255,0.07);
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .upload-icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+        .upload-zone p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .upload-zone p strong { color: var(--primary); }
+
+        #preview-container { display: none; margin-bottom: 18px; }
+
+        #card-preview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        /* Extracted data panel */
+        #extracted-panel {
+            display: none;
+            background: rgba(16,185,129,0.08);
+            border: 1px solid rgba(16,185,129,0.25);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+
+        #extracted-panel h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--success);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 16px rgba(108,99,255,0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(108,99,255,0.45);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            border: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--surface-hover);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Alert */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-error { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #FCA5A5; }
+        .alert-success { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #6EE7B7; }
+
+        /* Steps indicator */
+        .steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 28px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .step { display: flex; align-items: center; gap: 6px; }
+
+        .step-badge {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .step-badge.active { background: var(--primary); border-color: var(--primary); color: white; }
+        .step-badge.done { background: var(--success); border-color: var(--success); color: white; }
+
+        .step-divider { flex: 1; max-width: 40px; height: 1px; background: var(--border); }
+
+        .tips {
+            background: rgba(108,99,255,0.07);
+            border: 1px solid rgba(108,99,255,0.2);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 18px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .tips strong { color: var(--primary); }
+
+        @media (max-width: 480px) {
+            .verify-card { padding: 24px; }
+            .form-row { grid-template-columns: 1fr; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="verify-card">
+        <div class="verify-header">
+            <div class="verify-icon">🪪</div>
+            <h1>Verify Your Identity</h1>
+            <p>We need to confirm your voter identity before you can participate in elections.</p>
+        </div>
+
+        <!-- Step indicator -->
+        <div class="steps" id="step-indicator">
+            <div class="step">
+                <div class="step-badge active" id="step1-badge">1</div>
+                <span>Enter Details</span>
+            </div>
+            <div class="step-divider"></div>
+            <div class="step">
+                <div class="step-badge" id="step2-badge">2</div>
+                <span>Confirm</span>
+            </div>
+            <div class="step-divider"></div>
+            <div class="step">
+                <div class="step-badge" id="step3-badge">✓</div>
+                <span>Verified</span>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" id="manual-tab-btn" onclick="switchTab('manual')">
+                📝 Enter Manually
+            </button>
+            <button class="tab-btn" id="upload-tab-btn" onclick="switchTab('upload')">
+                📷 Upload Voter Card
+            </button>
+        </div>
+
+        <div id="alert-container"></div>
+
+        <!-- Manual Entry Tab -->
+        <div class="tab-panel active" id="manual-panel">
+            <form id="manual-form" onsubmit="submitManual(event)">
+                <div class="form-group">
+                    <label class="form-label" for="voter-id-input">Voter ID Number</label>
+                    <input type="text" class="form-input" id="voter-id-input"
+                           placeholder="e.g. ABC1234567" autocomplete="off" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="full-name-input">Full Name (as on card)</label>
+                    <input type="text" class="form-input" id="full-name-input"
+                           placeholder="Your full name" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="dob-input">Date of Birth</label>
+                        <input type="date" class="form-input" id="dob-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="aadhaar-input">Aadhaar Last 4 Digits</label>
+                        <input type="text" class="form-input" id="aadhaar-input"
+                               placeholder="XXXX" maxlength="4" pattern="\d{4}">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="manual-submit-btn">
+                    <div class="spinner" id="manual-spinner"></div>
+                    <span id="manual-btn-text">Verify My Identity</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Upload Card Tab -->
+        <div class="tab-panel" id="upload-panel">
+            <div class="tips">
+                <strong>📋 Tips for best results:</strong><br>
+                • Use a clear, well-lit photo of your voter ID card<br>
+                • Ensure all text is readable and not blurry<br>
+                • Avoid shadows and glare on the card
+            </div>
+
+            <div class="upload-zone" id="upload-zone">
+                <input type="file" id="card-image-input" accept="image/*" onchange="handleImageSelect(event)">
+                <div class="upload-icon">🖼️</div>
+                <p><strong>Click to upload</strong> or drag & drop your voter card image</p>
+                <p style="margin-top: 6px; font-size:0.8rem;">PNG, JPG up to 10MB</p>
+            </div>
+
+            <div id="preview-container">
+                <img id="card-preview" src="" alt="Voter card preview">
+            </div>
+
+            <button class="btn btn-secondary" id="extract-btn" onclick="extractFromCard()" disabled>
+                <div class="spinner" id="extract-spinner"></div>
+                <span id="extract-btn-text">🔍 Extract Details from Card</span>
+            </button>
+
+            <!-- Extracted data review panel -->
+            <div id="extracted-panel">
+                <h3>✅ Extracted Details — Please Review &amp; Confirm</h3>
+                <div class="form-group">
+                    <label class="form-label">Voter ID</label>
+                    <input type="text" class="form-input" id="ext-voter-id" placeholder="Not detected">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-input" id="ext-name" placeholder="Not detected">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" class="form-input" id="ext-dob">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Aadhaar Last 4</label>
+                        <input type="text" class="form-input" id="ext-aadhaar" placeholder="XXXX" maxlength="4">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="upload-submit-btn" onclick="submitFromCard()" disabled>
+                <div class="spinner" id="upload-spinner"></div>
+                <span id="upload-btn-text">Confirm &amp; Verify Identity</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        // Redirect if not logged in
+        if (!isLoggedIn()) window.location.href = '/';
+
+        // Redirect if already verified
+        const currentUser = getUser();
+        if (currentUser && currentUser.is_verified) window.location.href = '/dashboard/';
+
+        /* ========================
+           Tab switching
+        ======================== */
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`${tab}-panel`).classList.add('active');
+            document.getElementById(`${tab}-tab-btn`).classList.add('active');
+            clearAlert();
+        }
+
+        /* ========================
+           Alert helpers
+        ======================== */
+        function showAlert(msg, type = 'error') {
+            document.getElementById('alert-container').innerHTML =
+                `<div class="alert alert-${type}">${type === 'error' ? '⚠️' : '✅'} ${msg}</div>`;
+        }
+
+        function clearAlert() {
+            document.getElementById('alert-container').innerHTML = '';
+        }
+
+        /* ========================
+           Drag & drop upload zone
+        ======================== */
+        const uploadZone = document.getElementById('upload-zone');
+        uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) processImageFile(file);
+        });
+
+        function handleImageSelect(e) {
+            const file = e.target.files[0];
+            if (file) processImageFile(file);
+        }
+
+        function processImageFile(file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('card-preview').src = ev.target.result;
+                document.getElementById('preview-container').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            document.getElementById('extract-btn').disabled = false;
+            document.getElementById('extracted-panel').style.display = 'none';
+            document.getElementById('upload-submit-btn').disabled = true;
+            clearAlert();
+        }
+
+        /* ========================
+           OCR: extract from card
+        ======================== */
+        async function extractFromCard() {
+            const fileInput = document.getElementById('card-image-input');
+            if (!fileInput.files[0]) return;
+
+            const spinner = document.getElementById('extract-spinner');
+            const btnText = document.getElementById('extract-btn-text');
+            const btn = document.getElementById('extract-btn');
+
+            btn.disabled = true;
+            spinner.style.display = 'block';
+            btnText.textContent = 'Extracting...';
+            clearAlert();
+
+            try {
+                const formData = new FormData();
+                formData.append('card_image', fileInput.files[0]);
+
+                const token = getTokens()?.access;
+                const res = await fetch('/api/auth/extract-card/', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData,
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Extraction failed.');
+                }
+
+                const extracted = data.extracted;
+                document.getElementById('ext-voter-id').value = extracted.voter_id || '';
+                document.getElementById('ext-name').value = extracted.name || '';
+                document.getElementById('ext-dob').value = extracted.dob || '';
+                document.getElementById('ext-aadhaar').value = '';
+
+                document.getElementById('extracted-panel').style.display = 'block';
+                document.getElementById('upload-submit-btn').disabled = false;
+
+                showAlert('Details extracted! Please review and edit if needed, then confirm.', 'success');
+
+                // Update step indicator
+                document.getElementById('step1-badge').className = 'step-badge done';
+                document.getElementById('step2-badge').className = 'step-badge active';
+
+            } catch (err) {
+                showAlert(err.message || 'Could not extract data. Please fill in manually.');
+                document.getElementById('extracted-panel').style.display = 'block';
+                document.getElementById('upload-submit-btn').disabled = false;
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                btnText.textContent = '🔍 Extract Details from Card';
+            }
+        }
+
+        /* ========================
+           Submit from upload tab
+        ======================== */
+        async function submitFromCard() {
+            const fileInput = document.getElementById('card-image-input');
+            const voterId = document.getElementById('ext-voter-id').value.trim();
+            const name = document.getElementById('ext-name').value.trim();
+            const dob = document.getElementById('ext-dob').value;
+            const aadhaar = document.getElementById('ext-aadhaar').value.trim();
+
+            if (!voterId) { showAlert('Please provide a Voter ID number.'); return; }
+
+            const formData = new FormData();
+            formData.append('submitted_voter_id', voterId);
+            formData.append('full_name_on_card', name);
+            if (dob) formData.append('dob_on_card', dob);
+            if (aadhaar) formData.append('aadhaar_last4', aadhaar);
+            if (fileInput.files[0]) formData.append('card_image', fileInput.files[0]);
+
+            await submitVerification(formData, 'upload-spinner', 'upload-btn-text', 'upload-submit-btn');
+        }
+
+        /* ========================
+           Submit from manual tab
+        ======================== */
+        async function submitManual(e) {
+            e.preventDefault();
+
+            const voterId = document.getElementById('voter-id-input').value.trim();
+            const name = document.getElementById('full-name-input').value.trim();
+            const dob = document.getElementById('dob-input').value;
+            const aadhaar = document.getElementById('aadhaar-input').value.trim();
+
+            const formData = new FormData();
+            formData.append('submitted_voter_id', voterId);
+            formData.append('full_name_on_card', name);
+            if (dob) formData.append('dob_on_card', dob);
+            if (aadhaar) formData.append('aadhaar_last4', aadhaar);
+
+            await submitVerification(formData, 'manual-spinner', 'manual-btn-text', 'manual-submit-btn');
+        }
+
+        /* ========================
+           Shared verification API call
+        ======================== */
+        async function submitVerification(formData, spinnerId, btnTextId, btnId) {
+            const spinner = document.getElementById(spinnerId);
+            const btnText = document.getElementById(btnTextId);
+            const btn = document.getElementById(btnId);
+
+            btn.disabled = true;
+            spinner.style.display = 'block';
+            btnText.textContent = 'Verifying...';
+            clearAlert();
+
+            try {
+                const token = getTokens()?.access;
+                const res = await fetch('/api/auth/verify-identity/', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData,
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    const errors = Object.values(data).flat().join(' ');
+                    throw new Error(errors || 'Verification failed.');
+                }
+
+                // Update stored user
+                const user = getUser();
+                if (user) {
+                    user.is_verified = true;
+                    if (data.voter_id) user.voter_id = data.voter_id;
+                    saveUser(user);
+                }
+
+                // Mark steps complete
+                document.getElementById('step1-badge').className = 'step-badge done';
+                document.getElementById('step2-badge').className = 'step-badge done';
+                document.getElementById('step3-badge').className = 'step-badge done';
+
+                showAlert('🎉 Identity verified successfully! Redirecting to dashboard...', 'success');
+
+                setTimeout(() => { window.location.href = '/dashboard/'; }, 1800);
+
+            } catch (err) {
+                showAlert(err.message || 'Verification failed. Please try again.');
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                btnText.textContent = btn.id === 'manual-submit-btn' ? 'Verify My Identity' : 'Confirm & Verify Identity';
+            }
+        }
+    </script>
+</body>
+</html>

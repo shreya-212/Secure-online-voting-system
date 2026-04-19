@@ -143,7 +143,12 @@
                 );
                 saveTokens(data.tokens);
                 saveUser(data.user);
-                window.location.href = '/dashboard/';
+                // Redirect based on verification status
+                if (data.user.is_verified) {
+                    window.location.href = '/dashboard/';
+                } else {
+                    window.location.href = '/verify/';
+                }
             } catch (err) {
                 const msg = err.data?.non_field_errors?.[0] || err.data?.error || 'Login failed.';
                 document.getElementById('login-alert').innerHTML =
