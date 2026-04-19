@@ -587,9 +587,16 @@
                 document.getElementById('step2-badge').className = 'step-badge active';
 
             } catch (err) {
-                showAlert(err.message || 'Could not extract data. Please fill in manually.');
-                document.getElementById('extracted-panel').style.display = 'block';
-                document.getElementById('upload-submit-btn').disabled = false;
+                const errorMsg = err.message || 'Could not extract data from image.';
+                // If OCR service unavailable, guide user to manual entry
+                if (errorMsg.includes('Enter Manually') || errorMsg.includes('OCR service') || errorMsg.includes('not installed')) {
+                    switchTab('manual');
+                    showAlert(errorMsg);
+                } else {
+                    showAlert(errorMsg + ' You can fill in the details manually using the "Enter Manually" tab.');
+                    document.getElementById('extracted-panel').style.display = 'block';
+                    document.getElementById('upload-submit-btn').disabled = false;
+                }
             } finally {
                 btn.disabled = false;
                 spinner.style.display = 'none';

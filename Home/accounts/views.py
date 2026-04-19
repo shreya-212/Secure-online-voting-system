@@ -8,6 +8,7 @@ from datetime import timedelta
 import random
 import re
 import io
+import traceback
 
 from .models import User, OTP, VoterVerification
 from .serializers import (
@@ -185,9 +186,12 @@ def _extract_voter_card_data(image_bytes):
         img = Image.open(io.BytesIO(image_bytes))
         text = pytesseract.image_to_string(img, lang='eng')
     except ImportError:
-        return {'error': 'pytesseract is not installed. Please install it and Tesseract OCR.'}
+        return {'error': 'OCR service is not available. Please use the "Enter Manually" tab to input your Voter ID details instead.'}
     except Exception as e:
-        return {'error': f'OCR failed: {str(e)}'}
+        error_msg = str(e)
+        if 'tesseract is not installed' in error_msg.lower() or 'not found' in error_msg.lower():
+            return {'error': 'OCR service (Tesseract) is not installed on this server. Please use the "Enter Manually" tab to input your Voter ID details instead.'}
+        return {'error': f'OCR failed: {error_msg}'}
 
     # Helper: clean and extract
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
@@ -291,18 +295,25 @@ class RegisterFaceView(APIView):
         except ValueError as e:
             return Response({'error': str(e)}, status=422)
         except Exception as e:
+            traceback.print_exc()
             return Response({'error': f'Registration failed: {str(e)}'}, status=500)
 
 
 class VerifyFaceView(APIView):
-    """Verifies a LIVE webcam face against the FAISS index to authenticate voter_id."""
+    """Verifies a LIVE webcam face against the FAISS index to authenticate voter_id.
+    
+    SECURITY: voter_id is ALWAYS taken from the authenticated user's server-side
+    profile, NOT from client input. This prevents spoofing.
+    """
     parser_classes = [MultiPartParser, FormParser]
-    permission_classes = [permissions.AllowAny] # Because voting verification happens right before voting sometimes
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        voter_id = request.data.get('voter_id')
+        user = request.user
+        # SECURITY: Always use the server-side voter_id, never trust client input
+        voter_id = user.voter_id
         if not voter_id:
-            return Response({'error': 'voter_id is required.'}, status=400)
+            return Response({'error': 'You must be registered as a voter first.'}, status=400)
 
         image_file = request.FILES.get('live_image')
         if not image_file:
@@ -319,5 +330,6 @@ class VerifyFaceView(APIView):
         except ValueError as e:
             return Response({'error': str(e)}, status=422)
         except Exception as e:
+            traceback.print_exc()
             return Response({'error': f'Verification failed: {str(e)}'}, status=500)
 
