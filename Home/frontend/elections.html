@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Browse active elections and find elections you're eligible to vote in.">
+    <title>SecureVote — Elections</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/dashboard/" class="nav-brand">
+                <div class="logo">🗳️</div>
+                SecureVote
+            </a>
+            <ul class="nav-links">
+                <li><a href="/dashboard/">Dashboard</a></li>
+                <li><a href="/elections/" class="active">Elections</a></li>
+                <li><a href="/results/">Results</a></li>
+            </ul>
+            <div class="nav-user">
+                <span class="user-name" id="user-display"></span>
+                <button class="btn btn-sm btn-secondary" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <div class="section-header">
+                <div>
+                    <h1 class="section-title">Elections</h1>
+                    <p class="section-subtitle">Browse and participate in active elections</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-bar">
+            <button class="filter-chip active" onclick="filterElections('all', this)">All</button>
+            <button class="filter-chip" onclick="filterElections('eligible', this)">Eligible for Me</button>
+            <button class="filter-chip" onclick="filterElections('national', this)">🏛️ National</button>
+            <button class="filter-chip" onclick="filterElections('state', this)">🏢 State</button>
+            <button class="filter-chip" onclick="filterElections('village', this)">🏘️ Village</button>
+            <button class="filter-chip" onclick="filterElections('upcoming', this)">Upcoming</button>
+            <button class="filter-chip" onclick="filterElections('completed', this)">Completed</button>
+        </div>
+
+        <div class="elections-grid" id="elections-grid">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        if (!requireAuth()) {}
+
+        const user = getUser();
+        document.getElementById('user-display').textContent = user?.first_name || '';
+
+        let allElections = [];
+
+        async function loadElections() {
+            const container = document.getElementById('elections-grid');
+            try {
+                const data = await getElections();
+                allElections = data.results || data;
+                renderElections(allElections);
+            } catch (e) {
+                container.innerHTML = '<div class="empty-state"><div class="icon">❌</div><h3>Error</h3><p>Could not load elections.</p></div>';
+            }
+        }
+
+        function renderElections(elections) {
+            const container = document.getElementById('elections-grid');
+            if (!elections || elections.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="icon">📭</div><h3>No Elections Found</h3><p>No elections match your filter criteria.</p></div>';
+                return;
+            }
+
+            container.innerHTML = elections.map(el => {
+                const isActive = el.is_active || el.status === 'active';
+                const statusClass = isActive ? 'active' : el.status;
+                const actionBtn = isActive
+                    ? `<a href="/vote/?id=${el.id}" class="btn btn-sm btn-primary">Vote Now →</a>`
+                    : el.status === 'completed'
+                        ? `<a href="/results/?id=${el.id}" class="btn btn-sm btn-secondary">View Results</a>`
+                        : `<span class="election-status upcoming">Upcoming</span>`;
+
+                return `
+                    <div class="election-card ${el.level}">
+                        <div style="display:flex;justify-content:space-between;align-items:start">
+                            <span class="election-level ${el.level}">${el.level}</span>
+                            <span class="election-status ${statusClass}">${el.status || 'active'}</span>
+                        </div>
+                        <h3 class="election-title">${el.title}</h3>
+                        <div class="election-meta">
+                            <span>📍 ${el.constituency || el.state || 'All India'}</span>
+                            <span>📅 ${formatDate(el.start_time)} — ${formatDate(el.end_time)}</span>
+                            <span>👥 ${el.total_candidates || 0} candidates</span>
+                        </div>
+                        <div style="margin-top:16px">${actionBtn}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function filterElections(filter, btn) {
+            // Update active chip
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            if (filter === 'eligible') {
+                try {
+                    const data = await getEligibleElections();
+                    renderElections(data);
+                } catch (e) { renderElections([]); }
+                return;
+            }
+
+            let filtered = allElections;
+            if (filter === 'national') filtered = allElections.filter(e => e.level === 'national');
+            else if (filter === 'state') filtered = allElections.filter(e => e.level === 'state');
+            else if (filter === 'village') filtered = allElections.filter(e => e.level === 'village');
+            else if (filter === 'upcoming') filtered = allElections.filter(e => e.status === 'upcoming');
+            else if (filter === 'completed') filtered = allElections.filter(e => e.status === 'completed');
+
+            renderElections(filtered);
+        }
+
+        function handleLogout() { clearAuth(); window.location.href = '/'; }
+
+        loadElections();
+    </script>
+</body>
+</html>

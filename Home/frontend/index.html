@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Secure Online Voting System — Register or login to participate in democratic elections.">
+    <title>SecureVote — Login</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo">🗳️</div>
+                <h1>SecureVote</h1>
+                <p>Secure Online Voting System</p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="showTab('login')">Login</button>
+                <button class="auth-tab" onclick="showTab('register')">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div id="login-alert"></div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="login-email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="login-password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg" style="width:100%" id="login-btn">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
+                <div id="register-alert"></div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-input" id="reg-fname" placeholder="First name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-input" id="reg-lname" placeholder="Last name" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="reg-email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="reg-username" placeholder="Choose a username" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" class="form-input" id="reg-phone" placeholder="+91 9876543210">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-input" id="reg-password" minlength="8" placeholder="Min 8 chars" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-input" id="reg-password2" minlength="8" placeholder="Confirm" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">State</label>
+                        <input type="text" class="form-input" id="reg-state" placeholder="Karnataka">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">District</label>
+                        <input type="text" class="form-input" id="reg-district" placeholder="Bangalore">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Village / City</label>
+                    <input type="text" class="form-input" id="reg-village" placeholder="Your village or city">
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg" style="width:100%" id="register-btn">
+                    Create Account
+                </button>
+            </form>
+
+            <!-- OTP Form -->
+            <form id="otp-form" class="hidden" onsubmit="handleOTP(event)">
+                <div id="otp-alert"></div>
+                <div class="auth-header" style="margin-bottom:16px">
+                    <h2 style="font-size:1.25rem">Verify Your Account</h2>
+                    <p>Enter the OTP sent to your email/phone</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">OTP Code</label>
+                    <input type="text" class="form-input" id="otp-code" placeholder="123456" maxlength="6" required style="text-align:center;font-size:1.5rem;letter-spacing:8px">
+                </div>
+                <p id="mock-otp-display" class="text-center text-muted mb-2" style="font-size:0.85rem"></p>
+                <button type="submit" class="btn btn-success btn-lg" style="width:100%">
+                    Verify OTP
+                </button>
+            </form>
+
+            <div class="auth-footer" id="auth-footer">
+                Secure • Transparent • Democratic
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        // Redirect if already logged in
+        if (isLoggedIn()) window.location.href = '/dashboard/';
+
+        let pendingEmail = '';
+
+        function showTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+            document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
+            document.getElementById('otp-form').classList.add('hidden');
+            event.target.classList.add('active');
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('login-btn');
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+
+            try {
+                const data = await login(
+                    document.getElementById('login-email').value,
+                    document.getElementById('login-password').value
+                );
+                saveTokens(data.tokens);
+                saveUser(data.user);
+                window.location.href = '/dashboard/';
+            } catch (err) {
+                const msg = err.data?.non_field_errors?.[0] || err.data?.error || 'Login failed.';
+                document.getElementById('login-alert').innerHTML =
+                    `<div class="alert alert-error">✗ ${msg}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const btn = document.getElementById('register-btn');
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+
+            const formData = {
+                first_name: document.getElementById('reg-fname').value,
+                last_name: document.getElementById('reg-lname').value,
+                email: document.getElementById('reg-email').value,
+                username: document.getElementById('reg-username').value,
+                phone: document.getElementById('reg-phone').value,
+                password: document.getElementById('reg-password').value,
+                password2: document.getElementById('reg-password2').value,
+                state: document.getElementById('reg-state').value,
+                district: document.getElementById('reg-district').value,
+                village: document.getElementById('reg-village').value,
+            };
+
+            try {
+                const data = await register(formData);
+                saveTokens(data.tokens);
+                saveUser(data.user);
+                pendingEmail = formData.email;
+
+                // Show OTP form
+                document.getElementById('register-form').classList.add('hidden');
+                document.getElementById('login-form').classList.add('hidden');
+                document.querySelector('.auth-tabs').classList.add('hidden');
+                document.getElementById('otp-form').classList.remove('hidden');
+
+                // Show mock OTP
+                if (data.mock_otp) {
+                    document.getElementById('mock-otp-display').textContent =
+                        `(Dev Mode) Your OTP is: ${data.mock_otp}`;
+                }
+            } catch (err) {
+                let msg = 'Registration failed.';
+                if (err.data) {
+                    const errors = Object.values(err.data).flat();
+                    msg = errors.join(' ');
+                }
+                document.getElementById('register-alert').innerHTML =
+                    `<div class="alert alert-error">✗ ${msg}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            }
+        }
+
+        async function handleOTP(e) {
+            e.preventDefault();
+            const code = document.getElementById('otp-code').value;
+
+            try {
+                await verifyOTP(pendingEmail, code);
+                const user = getUser();
+                if (user) { user.is_verified = true; saveUser(user); }
+                window.location.href = '/dashboard/';
+            } catch (err) {
+                document.getElementById('otp-alert').innerHTML =
+                    `<div class="alert alert-error">✗ ${err.data?.error || 'Invalid OTP.'}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
