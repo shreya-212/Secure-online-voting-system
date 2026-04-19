@@ -272,21 +272,7 @@
             document.getElementById('vote-action').classList.add('hidden');
         }
 
-        async function confirmVote() {
-            if (!selectedCandidateId) return;
-
-            // Pre-fill user's voter ID if available
-            if (user && user.voter_id) {
-                document.getElementById('verify-voter-id').value = user.voter_id;
-            }
-
-            // Hide candidate selection and show Face Auth
-            document.getElementById('voting-section').classList.add('hidden');
-            document.getElementById('face-auth-section').classList.remove('hidden');
-            document.getElementById('face-alert').classList.add('hidden');
-            
-            await startCamera();
-        }
+        // confirmVote is defined below with full liveness flow
 
         // Import MediaPipe via JS injection
         const mpScript1 = document.createElement('script'); mpScript1.src = "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"; document.head.appendChild(mpScript1);
@@ -373,6 +359,12 @@
             const dot = document.getElementById(`dot-${index}`);
             dot.className = `dot ${state}`;
         }
+        function showFaceAlert(message, type) {
+            const alertBox = document.getElementById('face-alert');
+            alertBox.className = `alert alert-${type}`;
+            alertBox.innerHTML = `❌ ${message}`;
+            alertBox.classList.remove('hidden');
+        }
 
         function startLivenessCheck() {
             document.getElementById('start-verification-btn').style.display = "none";
@@ -451,9 +443,8 @@
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
                 
-                // 2. Transmit
+                // 2. Transmit — voter_id is handled server-side from the authenticated user
                 const formData = new FormData();
-                formData.append('voter_id', voterId);
                 formData.append('live_image', blob, 'capture.jpg');
                 
                 const token = getTokens()?.access;

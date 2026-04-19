@@ -1,5 +1,6 @@
 import os
 import io
+import uuid
 from PIL import Image
 from django.conf import settings
 import logging
@@ -16,17 +17,21 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 # Constants
-EMBEDDING_DIM = 512  # FaceNet dimension
+EMBEDDING_DIM = 128  # FaceNet outputs 128-dimensional embeddings
 INDEX_FILE_PATH = os.path.join(settings.BASE_DIR, 'media', 'voter_faces.index')
 ID_MAP_FILE_PATH = os.path.join(settings.BASE_DIR, 'media', 'voter_faces_map.npy')
-SIMILARITY_THRESHOLD = 0.40  # Cosine distance threshold for FaceNet (lower is stricter)
+# L2 distance threshold for normalized FaceNet embeddings.
+# Lower = stricter. 0.60 is strict enough to reject different people
+# while being lenient enough for the same person under varied lighting.
+SIMILARITY_THRESHOLD = 0.60
+
 
 class FAISSService:
     """Service to handle FaceNet embedding extraction and FAISS similarity search."""
 
     def __init__(self):
         self.index = None
-        self.id_map = [] # Maps FAISS index positional ID to voter_id string
+        self.id_map = []  # Maps FAISS index positional ID to voter_id string
         self._load_index()
 
     def _load_index(self):
@@ -38,11 +43,11 @@ class FAISSService:
         if os.path.exists(INDEX_FILE_PATH) and os.path.exists(ID_MAP_FILE_PATH):
             self.index = faiss.read_index(INDEX_FILE_PATH)
             self.id_map = np.load(ID_MAP_FILE_PATH).tolist()
+            logger.info(f"FAISS index loaded with {self.index.ntotal} faces.")
         else:
-            # Initialize an exact search index using L2 distance
-            # For 1M scaling, Replace IndexFlatL2 with IndexIVFFlat
             self.index = faiss.IndexFlatL2(EMBEDDING_DIM)
             self.id_map = []
+            logger.info("FAISS index initialized (empty).")
 
     def _save_index(self):
         """Persist FAISS index and ID map to disk."""
@@ -55,85 +60,134 @@ class FAISSService:
         """Extract a facial embedding from an image using DeepFace."""
         if not DeepFace:
             raise RuntimeError("DeepFace not installed.")
-        
+
+        # Save to a unique temp file to avoid race conditions
+        temp_path = os.path.join(settings.BASE_DIR, 'media', f'temp_face_{uuid.uuid4().hex[:8]}.jpg')
         try:
-            # Convert bytes to temporary image file or read directly
             img = Image.open(io.BytesIO(image_bytes))
-            # Deepface requires numpy array for memory processing usually, or temp file path
-            temp_path = os.path.join(settings.BASE_DIR, 'media', 'temp_face.jpg')
-            img.save(temp_path)
+            # Convert to RGB in case of RGBA or other modes
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+            img.save(temp_path, 'JPEG', quality=95)
 
             # Generate embedding using FaceNet
+            # enforce_detection=False to avoid crashes with webcam images
+            # We still check if a face was found via the response
             embedding_objs = DeepFace.represent(
-                img_path=temp_path, 
-                model_name="Facenet", 
-                enforce_detection=True
+                img_path=temp_path,
+                model_name="Facenet",
+                enforce_detection=False,
+                detector_backend="opencv"
             )
-            os.remove(temp_path)
-            
-            if len(embedding_objs) == 0:
-                raise ValueError("No face detected.")
-            
-            embedding = embedding_objs[0]['embedding']
-            return np.array(embedding, dtype='float32')
 
+            if len(embedding_objs) == 0:
+                raise ValueError("No face detected in the image.")
+
+            # Check face confidence — reject if DeepFace found no real face
+            face_confidence = embedding_objs[0].get('face_confidence', 0)
+            if face_confidence < 0.50:
+                raise ValueError("No clear face detected. Please ensure your face is visible and well-lit.")
+
+            embedding = np.array(embedding_objs[0]['embedding'], dtype='float32')
+            # L2 normalize for cosine-like distance via FAISS L2 index
+            norm = np.linalg.norm(embedding)
+            if norm > 0:
+                embedding = embedding / norm
+
+            return embedding
+
+        except ValueError:
+            raise  # Re-raise our own ValueErrors
         except Exception as e:
             logger.error(f"Error generating embedding: {e}")
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
             raise ValueError(f"Could not process face: {str(e)}")
+        finally:
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
 
     def register_face(self, voter_id, image_bytes):
         """Register a new face embedding to FAISS mapped to the voter_id."""
         if not DeepFace or not faiss:
-            logger.warning(f"Simulating face registration for {voter_id} due to missing AI dependencies.")
-            return True
+            raise ValueError("System error: AI dependencies are missing. Registration unavailable.")
+
+        # Reload index from disk to get latest state
+        self._load_index()
+
+        # Remove any existing embeddings for this voter_id (re-registration)
+        if voter_id in self.id_map:
+            logger.info(f"Re-registering face for {voter_id}, removing old embedding.")
+            new_index = faiss.IndexFlatL2(EMBEDDING_DIM)
+            new_id_map = []
+            for i, vid in enumerate(self.id_map):
+                if vid != voter_id:
+                    vec = self.index.reconstruct(i)
+                    new_index.add(np.expand_dims(vec, axis=0))
+                    new_id_map.append(vid)
+            self.index = new_index
+            self.id_map = new_id_map
 
         embedding = self._get_embedding(image_bytes)
         embedding = np.expand_dims(embedding, axis=0)
 
         self.index.add(embedding)
         self.id_map.append(voter_id)
-        
+
         self._save_index()
+        logger.info(f"Face registered for {voter_id}. Total faces in index: {self.index.ntotal}")
         return True
 
     def verify_face(self, voter_id, image_bytes):
         """Verify if the LIVE captured face matches the registered voter_id."""
         if not DeepFace or not faiss:
-            logger.warning(f"Simulating successful face verification for {voter_id} due to missing AI dependencies.")
-            return {
-                'verified': True,
-                'distance': 0.0,
-                'message': '(SIMULATED) Face verified successfully.'
-            }
+            raise ValueError("System error: AI dependencies are missing. Verification unavailable.")
+
+        # Reload index from disk to get latest state
+        self._load_index()
 
         if self.index is None or self.index.ntotal == 0:
-            raise ValueError("No faces registered in the system.")
+            raise ValueError("No faces registered in the system. Please register your face first.")
+
+        if voter_id not in self.id_map:
+            raise ValueError("Your face is not registered. Please register your Face ID first.")
 
         embedding = self._get_embedding(image_bytes)
         embedding = np.expand_dims(embedding, axis=0)
 
-        k = 3
+        # Search for the nearest face in the index
+        k = min(3, self.index.ntotal)
         distances, indices = self.index.search(embedding, k)
+
+        best_match_distance = float('inf')
+        best_match_voter = None
 
         for i, idx in enumerate(indices[0]):
             if idx == -1:
                 continue
-            
             matched_voter_id = self.id_map[idx]
-            distance = distances[0][i]
+            distance = float(distances[0][i])
 
-            if matched_voter_id == voter_id and distance <= SIMILARITY_THRESHOLD:
-                return {
-                    'verified': True,
-                    'distance': float(distance),
-                    'message': 'Face verified successfully.'
-                }
-        
+            if matched_voter_id == voter_id and distance < best_match_distance:
+                best_match_distance = distance
+                best_match_voter = matched_voter_id
+
+        logger.info(f"Face verify for {voter_id}: best_distance={best_match_distance:.4f}, threshold={SIMILARITY_THRESHOLD}")
+
+        if best_match_voter == voter_id and best_match_distance <= SIMILARITY_THRESHOLD:
+            return {
+                'verified': True,
+                'distance': best_match_distance,
+                'message': 'Face verified successfully.'
+            }
+
         return {
             'verified': False,
-            'message': 'Face does not match the registered voter.'
+            'distance': best_match_distance if best_match_voter else None,
+            'message': 'Face does not match. This is not the registered voter.'
         }
+
 
 faiss_service = FAISSService()
