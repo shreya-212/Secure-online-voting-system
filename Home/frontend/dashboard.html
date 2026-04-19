@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Your voting dashboard — view elections, profile, and notifications.">
+    <title>SecureVote — Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/dashboard/" class="nav-brand">
+                <div class="logo">🗳️</div>
+                SecureVote
+            </a>
+            <ul class="nav-links">
+                <li><a href="/dashboard/" class="active">Dashboard</a></li>
+                <li><a href="/elections/">Elections</a></li>
+                <li><a href="/results/">Results</a></li>
+            </ul>
+            <div class="nav-user">
+                <button class="nav-notification-btn" onclick="window.location.href='/dashboard/#notifications'">
+                    🔔 <span class="notification-badge hidden" id="notif-badge">0</span>
+                </button>
+                <span class="user-name" id="user-display"></span>
+                <button class="btn btn-sm btn-secondary" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 id="welcome-msg">Welcome back!</h1>
+            <p class="text-muted" id="voter-info"></p>
+        </div>
+
+        <!-- Verification Alert -->
+        <div id="verify-alert" class="hidden">
+            <div class="alert alert-warning">
+                ⚠️ Your account is not verified. Please verify your OTP to vote.
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid" id="stats-section">
+            <div class="stat-card">
+                <div class="stat-icon purple">🗳️</div>
+                <div>
+                    <div class="stat-value" id="stat-eligible">—</div>
+                    <div class="stat-label">Eligible Elections</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">✓</div>
+                <div>
+                    <div class="stat-value" id="stat-voted">—</div>
+                    <div class="stat-label">Votes Cast</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">🔔</div>
+                <div>
+                    <div class="stat-value" id="stat-notifs">—</div>
+                    <div class="stat-label">Notifications</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">📋</div>
+                <div>
+                    <div class="stat-value" id="stat-results">—</div>
+                    <div class="stat-label">Results Available</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Card -->
+        <div class="card mb-3" id="profile-card">
+            <div class="card-header">
+                <h3 class="card-title">👤 Your Profile</h3>
+                <button class="btn btn-sm btn-secondary" onclick="toggleProfileEdit()">Edit</button>
+            </div>
+            <div id="profile-display">
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+                    <div><span class="text-muted" style="font-size:0.8rem">Email</span><br><strong id="p-email">-</strong></div>
+                    <div><span class="text-muted" style="font-size:0.8rem">Voter ID</span><br><strong id="p-vid">-</strong></div>
+                    <div><span class="text-muted" style="font-size:0.8rem">Role</span><br><strong id="p-role">-</strong></div>
+                    <div><span class="text-muted" style="font-size:0.8rem">State</span><br><strong id="p-state">-</strong></div>
+                    <div><span class="text-muted" style="font-size:0.8rem">District</span><br><strong id="p-district">-</strong></div>
+                    <div><span class="text-muted" style="font-size:0.8rem">Village</span><br><strong id="p-village">-</strong></div>
+                </div>
+            </div>
+            <form id="profile-edit" class="hidden" onsubmit="saveProfile(event)">
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">First Name</label><input class="form-input" id="edit-fname"></div>
+                    <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" id="edit-lname"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="edit-phone"></div>
+                    <div class="form-group"><label class="form-label">State</label><input class="form-input" id="edit-state"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">District</label><input class="form-input" id="edit-district"></div>
+                    <div class="form-group"><label class="form-label">Village</label><input class="form-input" id="edit-village"></div>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleProfileEdit()">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Notifications -->
+        <div class="card mb-3" id="notifications">
+            <div class="card-header">
+                <h3 class="card-title">🔔 Recent Notifications</h3>
+                <button class="btn btn-sm btn-secondary" onclick="handleMarkAllRead()">Mark All Read</button>
+            </div>
+            <div id="notif-list">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <!-- Active Elections Quick View -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">🗳️ Active Elections</h3>
+                <a href="/elections/" class="btn btn-sm btn-primary">View All →</a>
+            </div>
+            <div id="active-elections-list">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        if (!requireAuth()) { /* redirects */ }
+
+        const user = getUser();
+
+        // Initialize
+        document.getElementById('user-display').textContent = user?.first_name || user?.email || '';
+        document.getElementById('welcome-msg').textContent = `Welcome, ${user?.first_name || 'Voter'}!`;
+        document.getElementById('voter-info').textContent = `Voter ID: ${user?.voter_id || 'N/A'} • Role: ${user?.role || 'voter'}`;
+
+        // Admin link
+        if (user?.role === 'admin' || user?.role === 'officer') {
+            const navLinks = document.querySelector('.nav-links');
+            const li = document.createElement('li');
+            li.innerHTML = '<a href="/admin-panel/">Admin Panel</a>';
+            navLinks.appendChild(li);
+        }
+
+        async function loadDashboard() {
+            try {
+                // Profile
+                const profile = await getProfile();
+                document.getElementById('p-email').textContent = profile.email;
+                document.getElementById('p-vid').textContent = profile.voter_id || 'N/A';
+                document.getElementById('p-role').textContent = profile.role;
+                document.getElementById('p-state').textContent = profile.state || '—';
+                document.getElementById('p-district').textContent = profile.district || '—';
+                document.getElementById('p-village').textContent = profile.village || '—';
+
+                if (!profile.is_verified) {
+                    document.getElementById('verify-alert').classList.remove('hidden');
+                }
+
+                // Prefill edit form
+                document.getElementById('edit-fname').value = profile.first_name;
+                document.getElementById('edit-lname').value = profile.last_name;
+                document.getElementById('edit-phone').value = profile.phone || '';
+                document.getElementById('edit-state').value = profile.state || '';
+                document.getElementById('edit-district').value = profile.district || '';
+                document.getElementById('edit-village').value = profile.village || '';
+            } catch (e) { console.error(e); }
+
+            // Eligible elections
+            try {
+                const eligible = await getEligibleElections();
+                document.getElementById('stat-eligible').textContent = eligible.length || '0';
+
+                const container = document.getElementById('active-elections-list');
+                if (eligible.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><h3>No Active Elections</h3><p>Check back later for upcoming elections.</p></div>';
+                } else {
+                    container.innerHTML = eligible.slice(0, 3).map(el => `
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+                            <div>
+                                <span class="election-level ${el.level}">${el.level}</span>
+                                <strong style="margin-left:10px">${el.title}</strong>
+                                <br><small class="text-muted">Ends: ${formatDate(el.end_time)}</small>
+                            </div>
+                            <a href="/vote/?id=${el.id}" class="btn btn-sm btn-primary">Vote →</a>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                document.getElementById('active-elections-list').innerHTML = '<p class="text-muted">Could not load elections.</p>';
+            }
+
+            // Notifications
+            try {
+                const countData = await getUnreadCount();
+                document.getElementById('stat-notifs').textContent = countData.unread_count || '0';
+                const badge = document.getElementById('notif-badge');
+                if (countData.unread_count > 0) {
+                    badge.textContent = countData.unread_count;
+                    badge.classList.remove('hidden');
+                }
+
+                const notifData = await getNotifications();
+                const notifs = notifData.results || notifData;
+                const notifContainer = document.getElementById('notif-list');
+
+                if (!notifs || notifs.length === 0) {
+                    notifContainer.innerHTML = '<p class="text-muted" style="padding:16px 0">No notifications yet.</p>';
+                } else {
+                    notifContainer.innerHTML = notifs.slice(0, 5).map(n => `
+                        <div style="padding:12px 0;border-bottom:1px solid var(--border);opacity:${n.is_read ? 0.6 : 1}">
+                            <strong>${n.title}</strong>
+                            <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:4px">${n.message}</p>
+                            <small class="text-muted">${formatDate(n.created_at)}</small>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                document.getElementById('notif-list').innerHTML = '<p class="text-muted">Could not load notifications.</p>';
+            }
+
+            // Stats placeholders
+            document.getElementById('stat-voted').textContent = '—';
+            document.getElementById('stat-results').textContent = '—';
+        }
+
+        function toggleProfileEdit() {
+            document.getElementById('profile-display').classList.toggle('hidden');
+            document.getElementById('profile-edit').classList.toggle('hidden');
+        }
+
+        async function saveProfile(e) {
+            e.preventDefault();
+            try {
+                await updateProfile({
+                    first_name: document.getElementById('edit-fname').value,
+                    last_name: document.getElementById('edit-lname').value,
+                    phone: document.getElementById('edit-phone').value,
+                    state: document.getElementById('edit-state').value,
+                    district: document.getElementById('edit-district').value,
+                    village: document.getElementById('edit-village').value,
+                });
+                showToast('Profile updated!');
+                toggleProfileEdit();
+                loadDashboard();
+            } catch (err) {
+                showToast('Failed to update profile.', 'error');
+            }
+        }
+
+        async function handleMarkAllRead() {
+            try {
+                await markAllRead();
+                showToast('All notifications marked as read.');
+                loadDashboard();
+            } catch (e) { showToast('Error', 'error'); }
+        }
+
+        function handleLogout() {
+            clearAuth();
+            window.location.href = '/';
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

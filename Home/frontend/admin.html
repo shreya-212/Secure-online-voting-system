@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVote — Admin Panel</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <nav class="navbar"><div class="container">
+        <a href="/dashboard/" class="nav-brand"><div class="logo">🗳️</div> SecureVote Admin</a>
+        <ul class="nav-links">
+            <li><a href="/dashboard/">Dashboard</a></li>
+            <li><a href="/elections/">Elections</a></li>
+            <li><a href="/admin-panel/" class="active">Admin</a></li>
+        </ul>
+        <div class="nav-user">
+            <span class="user-name" id="user-display"></span>
+            <button class="btn btn-sm btn-secondary" onclick="clearAuth();location='/'">Logout</button>
+        </div>
+    </div></nav>
+
+    <div class="container">
+        <div class="page-header">
+            <div class="section-header">
+                <div><h1 class="section-title">Admin Panel</h1><p class="section-subtitle">Manage elections, users, and view analytics</p></div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid" id="admin-stats">
+            <div class="stat-card"><div class="stat-icon purple">👥</div><div><div class="stat-value" id="s-users">—</div><div class="stat-label">Total Users</div></div></div>
+            <div class="stat-card"><div class="stat-icon green">✓</div><div><div class="stat-value" id="s-verified">—</div><div class="stat-label">Verified</div></div></div>
+            <div class="stat-card"><div class="stat-icon blue">🗳️</div><div><div class="stat-value" id="s-elections">—</div><div class="stat-label">Elections</div></div></div>
+            <div class="stat-card"><div class="stat-icon orange">📊</div><div><div class="stat-value" id="s-votes">—</div><div class="stat-label">Total Votes</div></div></div>
+        </div>
+
+        <!-- Create Election -->
+        <div class="card mb-3">
+            <div class="card-header"><h3 class="card-title">➕ Create Election</h3></div>
+            <form onsubmit="handleCreateElection(event)">
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="el-title" required></div>
+                    <div class="form-group"><label class="form-label">Level</label>
+                        <select class="form-input" id="el-level" required>
+                            <option value="national">National</option>
+                            <option value="state">State</option>
+                            <option value="village">Village</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="el-desc" rows="2"></textarea></div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Constituency</label><input class="form-input" id="el-cons"></div>
+                    <div class="form-group"><label class="form-label">State</label><input class="form-input" id="el-state"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">District</label><input class="form-input" id="el-district"></div>
+                    <div class="form-group"><label class="form-label">Village</label><input class="form-input" id="el-village"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Start Time</label><input type="datetime-local" class="form-input" id="el-start" required></div>
+                    <div class="form-group"><label class="form-label">End Time</label><input type="datetime-local" class="form-input" id="el-end" required></div>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Election</button>
+            </form>
+        </div>
+
+        <!-- Add Candidate -->
+        <div class="card mb-3">
+            <div class="card-header"><h3 class="card-title">👤 Add Candidate</h3></div>
+            <form onsubmit="handleAddCandidate(event)">
+                <div class="form-group"><label class="form-label">Election</label>
+                    <select class="form-input" id="cand-election" required><option value="">Select election...</option></select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Candidate Name</label><input class="form-input" id="cand-name" required></div>
+                    <div class="form-group"><label class="form-label">Party</label><input class="form-input" id="cand-party" required></div>
+                </div>
+                <div class="form-group"><label class="form-label">Symbol (emoji)</label><input class="form-input" id="cand-symbol" placeholder="🌸"></div>
+                <button type="submit" class="btn btn-primary">Add Candidate</button>
+            </form>
+        </div>
+
+        <!-- Users Table -->
+        <div class="card mb-3">
+            <div class="card-header"><h3 class="card-title">👥 Users</h3></div>
+            <div class="table-wrapper"><table>
+                <thead><tr><th>Name</th><th>Email</th><th>Voter ID</th><th>Role</th><th>State</th><th>Verified</th></tr></thead>
+                <tbody id="users-tbody"><tr><td colspan="6" class="text-center"><div class="spinner"></div></td></tr></tbody>
+            </table></div>
+        </div>
+
+        <!-- Elections Table -->
+        <div class="card mb-3">
+            <div class="card-header"><h3 class="card-title">🗳️ All Elections</h3></div>
+            <div class="table-wrapper"><table>
+                <thead><tr><th>Title</th><th>Level</th><th>Status</th><th>Start</th><th>End</th><th>Actions</th></tr></thead>
+                <tbody id="elections-tbody"><tr><td colspan="6" class="text-center"><div class="spinner"></div></td></tr></tbody>
+            </table></div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+    if(!requireAuth()){}
+    const user=getUser();
+    document.getElementById('user-display').textContent=user?.first_name||'';
+
+    async function loadAdmin(){
+        // Stats
+        try{
+            const s=await getDashboardStats();
+            document.getElementById('s-users').textContent=s.total_users;
+            document.getElementById('s-verified').textContent=s.verified_users;
+            document.getElementById('s-elections').textContent=s.total_elections;
+            document.getElementById('s-votes').textContent=s.total_votes;
+        }catch(e){console.error(e);}
+
+        // Users
+        try{
+            const d=await getUsers();const users=d.results||d;
+            document.getElementById('users-tbody').innerHTML=users.map(u=>
+                `<tr><td>${u.first_name} ${u.last_name}</td><td>${u.email}</td><td>${u.voter_id||'—'}</td><td><span class="badge badge-${u.role}">${u.role}</span></td><td>${u.state||'—'}</td><td>${u.is_verified?'<span class="badge badge-verified">Yes</span>':'No'}</td></tr>`
+            ).join('')||'<tr><td colspan="6" class="text-muted">No users</td></tr>';
+        }catch(e){document.getElementById('users-tbody').innerHTML='<tr><td colspan="6" class="text-muted">Access denied or error</td></tr>';}
+
+        // Elections
+        try{
+            const d=await getElections();const els=d.results||d;
+            document.getElementById('elections-tbody').innerHTML=els.map(e=>
+                `<tr><td>${e.title}</td><td><span class="election-level ${e.level}">${e.level}</span></td><td><span class="election-status ${e.status}">${e.status}</span></td><td>${formatDate(e.start_time)}</td><td>${formatDate(e.end_time)}</td><td><button class="btn btn-sm btn-secondary" onclick="deleteEl('${e.id}')">Delete</button></td></tr>`
+            ).join('')||'<tr><td colspan="6" class="text-muted">No elections</td></tr>';
+
+            // Populate candidate dropdown
+            const sel=document.getElementById('cand-election');
+            els.forEach(e=>{const o=document.createElement('option');o.value=e.id;o.textContent=e.title;sel.appendChild(o);});
+        }catch(e){document.getElementById('elections-tbody').innerHTML='<tr><td colspan="6" class="text-muted">Error</td></tr>';}
+    }
+
+    async function handleCreateElection(ev){
+        ev.preventDefault();
+        try{
+            await createElection({
+                title:document.getElementById('el-title').value,
+                description:document.getElementById('el-desc').value,
+                level:document.getElementById('el-level').value,
+                constituency:document.getElementById('el-cons').value,
+                state:document.getElementById('el-state').value,
+                district:document.getElementById('el-district').value,
+                village:document.getElementById('el-village').value,
+                start_time:new Date(document.getElementById('el-start').value).toISOString(),
+                end_time:new Date(document.getElementById('el-end').value).toISOString(),
+                status:'active',
+            });
+            showToast('Election created!');ev.target.reset();loadAdmin();
+        }catch(e){showToast(JSON.stringify(e.data)||'Error','error');}
+    }
+
+    async function handleAddCandidate(ev){
+        ev.preventDefault();
+        try{
+            await createCandidate({
+                election:document.getElementById('cand-election').value,
+                name:document.getElementById('cand-name').value,
+                party:document.getElementById('cand-party').value,
+                symbol:document.getElementById('cand-symbol').value,
+            });
+            showToast('Candidate added!');ev.target.reset();
+        }catch(e){showToast(JSON.stringify(e.data)||'Error','error');}
+    }
+
+    async function deleteEl(id){
+        if(!confirm('Delete this election?'))return;
+        try{await deleteElection(id);showToast('Deleted');loadAdmin();}
+        catch(e){showToast('Error','error');}
+    }
+
+    loadAdmin();
+    </script>
+</body>
+</html>

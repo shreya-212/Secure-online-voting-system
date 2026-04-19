@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVote — Results</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <nav class="navbar"><div class="container">
+        <a href="/dashboard/" class="nav-brand"><div class="logo">🗳️</div> SecureVote</a>
+        <ul class="nav-links">
+            <li><a href="/dashboard/">Dashboard</a></li>
+            <li><a href="/elections/">Elections</a></li>
+            <li><a href="/results/" class="active">Results</a></li>
+        </ul>
+        <div class="nav-user">
+            <span class="user-name" id="user-display"></span>
+            <button class="btn btn-sm btn-secondary" onclick="clearAuth();location='/'">Logout</button>
+        </div>
+    </div></nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1 class="section-title">Election Results</h1>
+            <p class="section-subtitle">View final results for completed elections</p>
+        </div>
+
+        <div id="election-selector">
+            <div class="elections-grid" id="completed-list"><div class="spinner"></div></div>
+        </div>
+
+        <div id="results-display" class="hidden">
+            <a href="/results/" style="font-size:0.9rem;color:var(--text-muted)">← All Results</a>
+            <div class="card mt-2 mb-3">
+                <div class="card-header">
+                    <div><h2 id="r-title">—</h2><p class="text-muted mt-1" id="r-meta"></p></div>
+                    <div style="text-align:right"><div class="stat-value" id="r-total">0</div><div class="stat-label">Total Votes</div></div>
+                </div>
+                <div id="winner-banner" class="hidden" style="background:var(--success-bg);border:1px solid rgba(16,185,129,0.3);border-radius:var(--radius-md);padding:20px;margin:16px 0;text-align:center">
+                    <div style="font-size:2rem">🏆</div>
+                    <h3 style="color:var(--success);margin:8px 0" id="w-name">—</h3>
+                    <p class="text-muted" id="w-party">—</p>
+                </div>
+                <div id="r-bars" style="margin-top:24px"><div class="spinner"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+    if(!requireAuth()){}
+    document.getElementById('user-display').textContent=getUser()?.first_name||'';
+    const eid=new URLSearchParams(location.search).get('id');
+    if(eid){document.getElementById('election-selector').classList.add('hidden');document.getElementById('results-display').classList.remove('hidden');loadR(eid);}
+    else{loadList();}
+
+    async function loadList(){
+        try{
+            const d=await getElections({status:'completed'});const els=d.results||d;
+            const c=document.getElementById('completed-list');
+            if(!els.length){c.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="icon">📊</div><h3>No Results Yet</h3></div>';return;}
+            c.innerHTML=els.map(e=>`<div class="election-card ${e.level}" style="cursor:pointer" onclick="location='/results/?id=${e.id}'">
+                <span class="election-level ${e.level}">${e.level}</span>
+                <h3 class="election-title">${e.title}</h3>
+                <div class="election-meta"><span>📅 Ended: ${formatDate(e.end_time)}</span></div>
+                <button class="btn btn-sm btn-primary mt-2">View Results →</button>
+            </div>`).join('');
+        }catch(e){document.getElementById('completed-list').innerHTML='<p class="text-muted">Error loading.</p>';}
+    }
+
+    async function loadR(id){
+        try{
+            const d=await getResults(id);const el=d.election;const rs=d.results;
+            document.getElementById('r-title').textContent=el.title;
+            document.getElementById('r-meta').innerHTML=`<span class="election-level ${el.level}">${el.level}</span> ${formatDate(el.start_time)} — ${formatDate(el.end_time)}`;
+            document.getElementById('r-total').textContent=d.total_votes.toLocaleString();
+            const w=rs.find(r=>r.is_winner);
+            if(w){document.getElementById('winner-banner').classList.remove('hidden');document.getElementById('w-name').textContent=w.candidate_name;document.getElementById('w-party').textContent=`${w.candidate_party} • ${w.total_votes} votes`;}
+            const mx=Math.max(...rs.map(r=>r.total_votes),1);
+            document.getElementById('r-bars').innerHTML=rs.map(r=>{
+                const pct=d.total_votes>0?((r.total_votes/d.total_votes)*100).toFixed(1):'0.0';
+                const wd=mx>0?((r.total_votes/mx)*100):0;
+                return `<div class="result-bar-container"><div class="result-info"><div><span class="result-candidate">${r.candidate_name}</span> <span class="text-muted" style="font-size:0.8rem">${r.candidate_party}</span>${r.is_winner?' <span class="winner-badge">🏆 Winner</span>':''}</div><span class="result-votes">${r.total_votes} (${pct}%)</span></div><div class="result-bar"><div class="result-bar-fill ${r.is_winner?'winner':''}" style="width:${wd}%">${wd>15?pct+'%':''}</div></div></div>`;
+            }).join('');
+        }catch(e){document.getElementById('r-bars').innerHTML=`<div class="alert alert-warning">⚠️ ${e.data?.error||'Cannot load results.'}</div>`;}
+    }
+    </script>
+</body>
+</html>

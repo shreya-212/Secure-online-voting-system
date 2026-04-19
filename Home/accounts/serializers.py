@@ -1,92 +1,70 @@
 from rest_framework import serializers
-
-from django.contrib.auth import get_user_model
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-User=get_user_model()
-
+from django.contrib.auth import authenticate
+from .models import User, OTP
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=8)
+    password2 = serializers.CharField(write_only=True, min_length=8)
+
     class Meta:
-        model=User
-        fields=('username','password','email','mobile_number')
-        extra_kwargs={
-            "password":{"write_only":True}
-        }
+        model = User
+        fields = [
+            'email', 'username', 'password', 'password2',
+            'first_name', 'last_name', 'phone',
+            'state', 'district', 'village', 'date_of_birth',
+        ]
 
-    
-    def validate(self, attrs):
-        password=attrs.get('password')
-
-        if len(password)<8:
-            raise serializers.ValidationError("password length must be greater than 8")
-        
-        if not any(char in "@#$!%&*" for char in password):
-            raise serializers.ValidationError("Password must include special character(@ #$!%&*)")
-        
-
-        if not any(char.isupper() for char in password):
-            raise serializers.ValidationError("Must include a Upper case letter")
-        
-        return attrs
-    
-
-
-    def validate_email(self,value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Gmail already used by another person")
-        
-        return value
-    
-
-
-    def validate_mobile_number(self,value):
-        if not len(value)==10 or not all(num.isdigit() for num in value):
-            raise serializers.ValidationError("mobile number must contain 10 digit")
-        
-        return value
-
-
-
-
-
-    
-    def create(self, validated_data):
-        user=User.objects.create_user(
-           username=validated_data["username"],
-           email=validated_data["email"],
-           role="STUDENT",
-           mobile_number=validated_data.get("mobile_number"),
-           password=validated_data["password"],
-        )
-
-        user.save()
-
-        return user
-    
-
-
-
-
-class CustomObtainPair_Serializer(TokenObtainPairSerializer):
-
-    @classmethod
-    def get_token(cls, user):
-        token=super().get_token(user)
-
-        token['username']=user.username
-        token['role']=user.role
-        
-
-        return token
-    
-
-    def validate(self, attrs):
-        data= super().validate(attrs)
-
-
-        data['username']=self.user.username
-        data['role']=self.user.role
-
-
+    def validate(self, data):
+        if data['password'] != data['password2']:
+            raise serializers.ValidationError({'password': 'Passwords do not match.'})
         return data
+
+    def create(self, validated_data):
+        validated_data.pop('password2')
+        password = validated_data.pop('password')
+        # Generate voter_id
+        import uuid
+        validated_data['voter_id'] = f"VID-{uuid.uuid4().hex[:10].upper()}"
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    def validate(self, data):
+        user = authenticate(username=data['email'], password=data['password'])
+        if not user:
+            raise serializers.ValidationError('Invalid email or password.')
+        if not user.is_active:
+            raise serializers.ValidationError('Account is disabled.')
+        data['user'] = user
+        return data
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'id', 'email', 'username', 'first_name', 'last_name',
+            'phone', 'voter_id', 'role', 'state', 'district',
+            'village', 'is_verified', 'date_of_birth',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'email', 'voter_id', 'role', 'is_verified', 'created_at', 'updated_at']
+
+
+class OTPVerifySerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=6)
+
+
+class UserListSerializer(serializers.ModelSerializer):
+    """Compact serializer for admin user listings."""
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name', 'voter_id', 'role', 'state', 'is_verified']

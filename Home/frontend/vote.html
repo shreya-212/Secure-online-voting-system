@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cast your vote securely and anonymously.">
+    <title>SecureVote — Cast Your Vote</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/dashboard/" class="nav-brand"><div class="logo">🗳️</div> SecureVote</a>
+            <ul class="nav-links">
+                <li><a href="/dashboard/">Dashboard</a></li>
+                <li><a href="/elections/" class="active">Elections</a></li>
+                <li><a href="/results/">Results</a></li>
+            </ul>
+            <div class="nav-user">
+                <span class="user-name" id="user-display"></span>
+                <button class="btn btn-sm btn-secondary" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <a href="/elections/" style="font-size:0.9rem;color:var(--text-muted)">← Back to Elections</a>
+            <h1 class="section-title mt-1" id="election-title">Loading...</h1>
+            <p class="section-subtitle" id="election-info"></p>
+        </div>
+
+        <!-- Already Voted Alert -->
+        <div id="already-voted" class="hidden">
+            <div class="alert alert-info">
+                ✓ You have already voted in this election. Thank you for participating!
+            </div>
+            <a href="/results/?id=" id="view-results-link" class="btn btn-primary mt-2">View Results →</a>
+        </div>
+
+        <!-- Candidates -->
+        <div id="voting-section">
+            <h2 style="font-size:1.25rem;margin-bottom:8px">Select Your Candidate</h2>
+            <p class="text-muted mb-3">Click on a candidate to select, then confirm your vote.</p>
+
+            <div class="candidates-grid" id="candidates-grid">
+                <div class="spinner"></div>
+            </div>
+
+            <div id="vote-action" class="hidden" style="text-align:center;margin-top:32px">
+                <div class="card" style="max-width:500px;margin:0 auto">
+                    <h3>Confirm Your Vote</h3>
+                    <p class="mt-1 text-muted">You are voting for: <strong id="selected-name">—</strong></p>
+                    <p style="font-size:0.8rem;color:var(--warning);margin-top:8px">⚠️ This action cannot be undone.</p>
+                    <div class="mt-2 flex gap-2" style="justify-content:center">
+                        <button class="btn btn-success btn-lg" id="confirm-btn" onclick="confirmVote()">
+                            ✓ Cast My Vote
+                        </button>
+                        <button class="btn btn-secondary" onclick="cancelSelection()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success -->
+        <div id="vote-success" class="hidden" style="text-align:center;padding:60px 20px">
+            <div style="font-size:4rem;margin-bottom:16px">✅</div>
+            <h2>Vote Cast Successfully!</h2>
+            <p class="text-muted mt-1">Your vote has been recorded securely and anonymously.</p>
+            <p class="mt-2" style="font-size:0.85rem">Vote Hash: <code id="vote-hash" style="color:var(--accent-light)"></code></p>
+            <div class="mt-3 flex gap-2" style="justify-content:center">
+                <a href="/elections/" class="btn btn-primary">Browse Elections</a>
+                <a href="/dashboard/" class="btn btn-secondary">Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        if (!requireAuth()) {}
+
+        const user = getUser();
+        document.getElementById('user-display').textContent = user?.first_name || '';
+
+        const params = new URLSearchParams(window.location.search);
+        const electionId = params.get('id');
+        let selectedCandidateId = null;
+
+        if (!electionId) {
+            document.getElementById('election-title').textContent = 'No election selected';
+            document.getElementById('candidates-grid').innerHTML = '<div class="empty-state"><p>Please select an election from the <a href="/elections/">elections page</a>.</p></div>';
+        } else {
+            loadVotingPage();
+        }
+
+        async function loadVotingPage() {
+            try {
+                // Check if already voted
+                const voteStatus = await getVoteStatus(electionId);
+                if (voteStatus.has_voted) {
+                    document.getElementById('voting-section').classList.add('hidden');
+                    document.getElementById('already-voted').classList.remove('hidden');
+                    document.getElementById('view-results-link').href = `/results/?id=${electionId}`;
+                }
+
+                // Load election details
+                const election = await getElection(electionId);
+                document.getElementById('election-title').textContent = election.title;
+                document.getElementById('election-info').innerHTML =
+                    `<span class="election-level ${election.level}" style="margin-right:8px">${election.level}</span>` +
+                    `${election.constituency || election.state || 'All India'} • Ends: ${formatDate(election.end_time)}`;
+
+                // Load candidates
+                const candidates = election.candidates || [];
+                const container = document.getElementById('candidates-grid');
+
+                if (candidates.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="icon">👤</div><h3>No Candidates</h3><p>No candidates found for this election.</p></div>';
+                    return;
+                }
+
+                container.innerHTML = candidates.map(c => `
+                    <div class="candidate-card" data-id="${c.id}" onclick="selectCandidate('${c.id}', '${c.name} (${c.party})')">
+                        <div class="candidate-avatar">${c.name.charAt(0)}</div>
+                        <div class="candidate-name">${c.name}</div>
+                        <div class="candidate-party">${c.party}</div>
+                        <div class="candidate-symbol">${c.symbol || '🏳️'}</div>
+                    </div>
+                `).join('');
+
+            } catch (e) {
+                document.getElementById('candidates-grid').innerHTML =
+                    '<div class="empty-state"><div class="icon">❌</div><h3>Error</h3><p>Could not load election details.</p></div>';
+            }
+        }
+
+        function selectCandidate(id, name) {
+            selectedCandidateId = id;
+            document.querySelectorAll('.candidate-card').forEach(c => {
+                c.classList.toggle('selected', c.dataset.id === id);
+            });
+            document.getElementById('selected-name').textContent = name;
+            document.getElementById('vote-action').classList.remove('hidden');
+        }
+
+        function cancelSelection() {
+            selectedCandidateId = null;
+            document.querySelectorAll('.candidate-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById('vote-action').classList.add('hidden');
+        }
+
+        async function confirmVote() {
+            if (!selectedCandidateId) return;
+
+            const btn = document.getElementById('confirm-btn');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            try {
+                const result = await castVote(electionId, selectedCandidateId);
+                document.getElementById('voting-section').classList.add('hidden');
+                document.getElementById('vote-success').classList.remove('hidden');
+                document.getElementById('vote-hash').textContent = result.vote_hash;
+            } catch (err) {
+                const msg = err.data?.error || 'Failed to cast vote.';
+                showToast(msg, 'error');
+                btn.disabled = false;
+                btn.textContent = '✓ Cast My Vote';
+            }
+        }
+
+        function handleLogout() { clearAuth(); window.location.href = '/'; }
+    </script>
+</body>
+</html>
