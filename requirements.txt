@@ -19,3 +19,8 @@ Pillow>=10.0
 
 # OCR — for voter card text extraction (requires Tesseract binary installed)
 pytesseract>=0.3.10
+
+# AI Face Verification
+deepface>=0.0.84
+faiss-cpu>=1.7.4
+numpy>=1.23.0

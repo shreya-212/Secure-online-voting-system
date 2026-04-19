@@ -266,3 +266,58 @@ class VoterVerifyIdentityView(APIView):
             'voter_id': user.voter_id,
         })
 
+
+from .services.faiss_service import faiss_service
+
+class RegisterFaceView(APIView):
+    """Registers a LIVE webcam face into the FAISS index mapped to the user ID."""
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        if not user.voter_id:
+            return Response({'error': 'You must be registered as a voter first.'}, status=400)
+
+        image_file = request.FILES.get('live_image')
+        if not image_file:
+            return Response({'error': 'No image file provided.'}, status=400)
+
+        try:
+            image_bytes = image_file.read()
+            # Register in FAISS
+            faiss_service.register_face(user.voter_id, image_bytes)
+            return Response({'message': 'Face successfully registered.'})
+        except ValueError as e:
+            return Response({'error': str(e)}, status=422)
+        except Exception as e:
+            return Response({'error': f'Registration failed: {str(e)}'}, status=500)
+
+
+class VerifyFaceView(APIView):
+    """Verifies a LIVE webcam face against the FAISS index to authenticate voter_id."""
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [permissions.AllowAny] # Because voting verification happens right before voting sometimes
+
+    def post(self, request):
+        voter_id = request.data.get('voter_id')
+        if not voter_id:
+            return Response({'error': 'voter_id is required.'}, status=400)
+
+        image_file = request.FILES.get('live_image')
+        if not image_file:
+            return Response({'error': 'No image file provided.'}, status=400)
+
+        try:
+            image_bytes = image_file.read()
+            result = faiss_service.verify_face(voter_id, image_bytes)
+            
+            if result.get('verified'):
+                return Response(result)
+            return Response(result, status=401)
+            
+        except ValueError as e:
+            return Response({'error': str(e)}, status=422)
+        except Exception as e:
+            return Response({'error': f'Verification failed: {str(e)}'}, status=500)
+

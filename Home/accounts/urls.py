@@ -10,4 +10,6 @@ urlpatterns = [
     path('dashboard-stats/', views.DashboardStatsView.as_view(), name='dashboard_stats'),
     path('extract-card/', views.ExtractCardView.as_view(), name='extract_card'),
     path('verify-identity/', views.VoterVerifyIdentityView.as_view(), name='verify_identity'),
+    path('register-face/', views.RegisterFaceView.as_view(), name='register_face'),
+    path('verify-face/', views.VerifyFaceView.as_view(), name='verify_face'),
 ]
