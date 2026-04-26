@@ -6,35 +6,37 @@
     <meta name="description" content="Secure Online Voting System — Register or login to participate in democratic elections.">
     <title>SecureVote — Login</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/voice.css">
+    <link rel="stylesheet" href="/static/css/translate.css">
 </head>
 <body>
     <div class="auth-wrapper">
         <div class="auth-card">
             <div class="auth-header">
                 <div class="logo">🗳️</div>
-                <h1>SecureVote</h1>
-                <p>Secure Online Voting System</p>
+                <h1 data-i18n="app.name">SecureVote</h1>
+                <p data-i18n="app.tagline">Secure Online Voting System</p>
             </div>
 
             <!-- Tabs -->
             <div class="auth-tabs">
-                <button class="auth-tab active" onclick="showTab('login')">Login</button>
-                <button class="auth-tab" onclick="showTab('register')">Register</button>
+                <button class="auth-tab active" onclick="showTab('login')" data-i18n="btn.login">Login</button>
+                <button class="auth-tab" onclick="showTab('register')" data-i18n="btn.register">Register</button>
             </div>
 
             <!-- Login Form -->
             <form id="login-form" onsubmit="handleLogin(event)">
                 <div id="login-alert"></div>
                 <div class="form-group">
-                    <label class="form-label">Email</label>
+                    <label class="form-label" data-i18n="auth.email">Email</label>
                     <input type="email" class="form-input" id="login-email" placeholder="you@example.com" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Password</label>
+                    <label class="form-label" data-i18n="auth.password">Password</label>
                     <input type="password" class="form-input" id="login-password" placeholder="••••••••" required>
                 </div>
                 <button type="submit" class="btn btn-primary btn-lg" style="width:100%" id="login-btn">
-                    Sign In
+                    <span data-i18n="btn.signIn">Sign In</span>
                 </button>
             </form>
 
@@ -43,16 +45,16 @@
                 <div id="register-alert"></div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">First Name</label>
+                        <label class="form-label" data-i18n="auth.firstName">First Name</label>
                         <input type="text" class="form-input" id="reg-fname" placeholder="First name" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Last Name</label>
+                        <label class="form-label" data-i18n="auth.lastName">Last Name</label>
                         <input type="text" class="form-input" id="reg-lname" placeholder="Last name" required>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Email</label>
+                    <label class="form-label" data-i18n="auth.email">Email</label>
                     <input type="email" class="form-input" id="reg-email" placeholder="you@example.com" required>
                 </div>
                 <div class="form-group">
@@ -65,7 +67,7 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Password</label>
+                        <label class="form-label" data-i18n="auth.password">Password</label>
                         <input type="password" class="form-input" id="reg-password" minlength="8" placeholder="Min 8 chars" required>
                     </div>
                     <div class="form-group">
@@ -223,6 +225,33 @@
                     `<div class="alert alert-error">✗ ${err.data?.error || 'Invalid OTP.'}</div>`;
             }
         }
+    </script>
+    <script src="/static/js/translations.js"></script>
+    <script src="/static/js/translate.js"></script>
+    <script src="/static/js/voice.js"></script>
+    <script>
+        VoiceEngine.init({
+            announceOnLoad: 'Welcome to SecureVote. You can sign in or create a new account. Click the microphone button or say a command to get started.',
+            guideSteps: [
+                { text: 'Welcome to SecureVote — Secure Online Voting System.', speak: 'Welcome to SecureVote, a Secure Online Voting System.' },
+                { text: 'To login, enter your email and password, then click Sign In.', speak: 'To login, enter your email and password, then click Sign In. Or say login.' },
+                { text: 'To register, click the Register tab and fill in your details.', speak: 'To create a new account, click the Register tab or say register.' },
+                { text: 'You can use voice commands: say "login" or "register" to switch tabs.', speak: 'You can use voice commands. Say login or register to switch between the forms.' },
+                { text: 'After registering, you will receive an OTP to verify your account.', speak: 'After registering, you will receive a one-time password to verify your account.' },
+            ],
+            commands: [
+                {
+                    patterns: ['login', 'sign in', 'log in'],
+                    handler: () => { showTab('login'); VoiceEngine.speak('Switched to login form.'); },
+                    description: 'Switch to login tab'
+                },
+                {
+                    patterns: ['register', 'sign up', 'create account'],
+                    handler: () => { showTab('register'); VoiceEngine.speak('Switched to registration form.'); },
+                    description: 'Switch to register tab'
+                }
+            ]
+        });
     </script>
 </body>
 </html>

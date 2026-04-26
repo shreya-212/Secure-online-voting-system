@@ -6,6 +6,8 @@
     <meta name="description" content="Register your Face ID for secure online voting.">
     <title>SecureVote — Register Face ID</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/voice.css">
+    <link rel="stylesheet" href="/static/css/translate.css">
     <style>
         .face-auth-container {
             position: relative;
@@ -167,6 +169,34 @@
                 btn.textContent = "📷 Retry Capture";
             }
         }
+    </script>
+    <script src="/static/js/translations.js"></script>
+    <script src="/static/js/translate.js"></script>
+    <script src="/static/js/voice.js"></script>
+    <script>
+        VoiceEngine.init({
+            guideSteps: [
+                { text: 'This page lets you register your Face ID for secure voting.', speak: 'This page lets you register your Face ID. Your facial geometry will be linked to your Voter ID for secure authentication.' },
+                { text: 'Position your face clearly in the camera frame.', speak: 'Make sure your face is clearly visible in the camera. Ensure good lighting and look straight at the camera.' },
+                { text: 'Say "capture" or click the button to register your face.', speak: 'When you are ready, say capture or click the Capture and Register Face button.' },
+                { text: 'After registration, your Face ID will be used to verify you before voting.', speak: 'After registration, you will need to verify your face each time before casting a vote. This prevents identity fraud.' },
+            ],
+            commands: [
+                {
+                    patterns: ['capture', 'register', 'take photo', 'snap', 'capture face'],
+                    handler: () => {
+                        const btn = document.getElementById('capture-btn');
+                        if (btn && btn.style.display !== 'none' && !btn.disabled) {
+                            VoiceEngine.speak('Capturing your face now.');
+                            setTimeout(() => captureAndRegister(), 1000);
+                        } else {
+                            VoiceEngine.speak('Camera is not ready yet. Please wait.');
+                        }
+                    },
+                    description: 'Capture and register face'
+                }
+            ]
+        });
     </script>
 </body>
 </html>

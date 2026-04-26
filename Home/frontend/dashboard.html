@@ -6,6 +6,8 @@
     <meta name="description" content="Your voting dashboard — view elections, profile, and notifications.">
     <title>SecureVote — Dashboard</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/voice.css">
+    <link rel="stylesheet" href="/static/css/translate.css">
 </head>
 <body>
     <!-- Navbar -->
@@ -19,6 +21,7 @@
                 <li><a href="/dashboard/" class="active">Dashboard</a></li>
                 <li><a href="/elections/">Elections</a></li>
                 <li><a href="/results/">Results</a></li>
+                <li><a href="/profile/">Profile</a></li>
             </ul>
             <div class="nav-user">
                 <button class="nav-notification-btn" onclick="window.location.href='/dashboard/#notifications'">
@@ -81,11 +84,21 @@
             <div class="card-header">
                 <h3 class="card-title">👤 Your Profile</h3>
                 <div class="flex gap-2">
+                    <a href="/profile/" class="btn btn-sm btn-secondary">View Full Profile</a>
                     <a href="/register-face/" class="btn btn-sm btn-primary" id="btn-register-face" style="display:none;">📷 Face ID</a>
                     <button class="btn btn-sm btn-secondary" onclick="toggleProfileEdit()">Edit</button>
                 </div>
             </div>
             <div id="profile-display">
+                <div style="display:flex; gap:20px; align-items:center; margin-bottom:15px">
+                    <div style="width:80px; height:80px; border-radius:50%; overflow:hidden; border:2px solid var(--border); background:#eee">
+                        <img id="p-img" src="/static/img/default-avatar.png" alt="Profile" style="width:100%; height:100%; object-fit:cover">
+                    </div>
+                    <div>
+                        <h4 id="p-fullname">User Name</h4>
+                        <span id="p-vid-top" class="text-muted" style="font-size:0.85rem"></span>
+                    </div>
+                </div>
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
                     <div><span class="text-muted" style="font-size:0.8rem">Email</span><br><strong id="p-email">-</strong></div>
                     <div><span class="text-muted" style="font-size:0.8rem">Voter ID</span><br><strong id="p-vid">-</strong></div>
@@ -161,6 +174,11 @@
             try {
                 // Profile
                 const profile = await getProfile();
+                document.getElementById('p-fullname').textContent = `${profile.first_name} ${profile.last_name}`;
+                document.getElementById('p-vid-top').textContent = profile.voter_id || 'N/A';
+                if (profile.profile_picture) {
+                    document.getElementById('p-img').src = profile.profile_picture;
+                }
                 document.getElementById('p-email').textContent = profile.email;
                 document.getElementById('p-vid').textContent = profile.voter_id || 'N/A';
                 document.getElementById('p-role').textContent = profile.role;
@@ -171,7 +189,15 @@
                 if (!profile.is_verified) {
                     document.getElementById('verify-alert').classList.remove('hidden');
                 } else {
-                    document.getElementById('btn-register-face').style.display = 'inline-flex';
+                    const faceBtn = document.getElementById('btn-register-face');
+                    faceBtn.style.display = 'inline-flex';
+                    if (profile.has_face_registered) {
+                        faceBtn.innerHTML = '✅ Face ID Set';
+                        faceBtn.classList.remove('btn-primary');
+                        faceBtn.classList.add('btn-success');
+                        faceBtn.href = 'javascript:void(0)';
+                        faceBtn.onclick = () => alert('Your Face ID is already registered. If you wish to re-register, please ask an administrator to reset it.');
+                    }
                 }
 
                 // Prefill edit form
@@ -279,6 +305,65 @@
         }
 
         loadDashboard();
+    </script>
+    <script src="/static/js/translations.js"></script>
+    <script src="/static/js/translate.js"></script>
+    <script src="/static/js/voice.js"></script>
+    <script>
+        VoiceEngine.init({
+            guideSteps: [
+                { text: 'This is your SecureVote Dashboard.', speak: `Welcome back ${user?.first_name || 'voter'}. This is your SecureVote Dashboard.` },
+                { text: 'The stats section shows eligible elections, votes cast, and notifications.', speak: 'At the top you can see your stats: eligible elections, votes cast, and notifications.' },
+                { text: 'Your profile card shows your registered details. Click Edit to update.', speak: 'Your profile card shows your voter ID, role, state, and district. Say edit profile to update your details.' },
+                { text: 'Active Elections section shows elections you can vote in right now.', speak: 'The Active Elections section shows elections you can vote in. Say go to elections to see all elections.' },
+                {
+                    text: 'Available voice commands: "go to elections", "go to results", "edit profile", "register face".',
+                    speak: 'You can say: go to elections, go to results, edit profile, or register face to navigate.',
+                    action: () => {
+                        // Read election names if available
+                        const elCards = document.querySelectorAll('#active-elections-list strong');
+                        if (elCards.length > 0) {
+                            let names = Array.from(elCards).map((el, i) => `Number ${i+1}: ${el.textContent}`);
+                            setTimeout(() => VoiceEngine.speak('Here are your active elections. ' + names.join('. ')), 2000);
+                        }
+                    }
+                },
+            ],
+            commands: [
+                {
+                    patterns: ['edit profile', 'update profile', 'change profile'],
+                    handler: () => { toggleProfileEdit(); VoiceEngine.speak('Profile edit form is now open.'); },
+                    description: 'Open profile edit form'
+                },
+                {
+                    patterns: ['show notifications', 'read notifications', 'notifications'],
+                    handler: () => {
+                        const notifs = document.querySelectorAll('#notif-list strong');
+                        if (notifs.length === 0) {
+                            VoiceEngine.speak('You have no notifications.');
+                        } else {
+                            const titles = Array.from(notifs).map(n => n.textContent).join('. ');
+                            VoiceEngine.speak('Your notifications: ' + titles);
+                        }
+                    },
+                    description: 'Read notifications aloud'
+                },
+                {
+                    patterns: [/select election (\d+)/, /election number (\d+)/, /open election (\d+)/],
+                    handler: (text, match) => {
+                        const num = parseInt(match[1]) - 1;
+                        const links = document.querySelectorAll('#active-elections-list a.btn');
+                        if (links[num]) {
+                            VoiceEngine.speak('Opening election number ' + (num+1));
+                            setTimeout(() => links[num].click(), 700);
+                        } else {
+                            VoiceEngine.speak('Election number ' + (num+1) + ' not found.');
+                        }
+                    },
+                    description: 'Open an election by number'
+                }
+            ]
+        });
     </script>
 </body>
 </html>

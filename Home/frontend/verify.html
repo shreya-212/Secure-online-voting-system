@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/voice.css">
+    <link rel="stylesheet" href="/static/css/translate.css">
     <style>
         :root {
             --primary: #6C63FF;
@@ -350,7 +352,7 @@
     </style>
 </head>
 <body>
-    <div class="verify-card">
+    <div class="verify-card" style="position: relative;">
         <div class="verify-header">
             <div class="verify-icon">🪪</div>
             <h1>Verify Your Identity</h1>
@@ -697,6 +699,45 @@
                 btnText.textContent = btn.id === 'manual-submit-btn' ? 'Verify My Identity' : 'Confirm & Verify Identity';
             }
         }
+    </script>
+    <script src="/static/js/translations.js"></script>
+    <script src="/static/js/translate.js"></script>
+    <script src="/static/js/voice.js"></script>
+    <script>
+        VoiceEngine.init({
+            announceOnLoad: 'Welcome to Identity Verification. You need to verify your voter identity to participate in elections. You can enter your details manually or upload your voter card.',
+            guideSteps: [
+                { text: 'This page verifies your voter identity to enable voting.', speak: 'This page verifies your voter identity. You must complete this step before you can vote in any election.' },
+                { text: 'Option 1: Enter your Voter ID, name, and date of birth manually.', speak: 'You can enter your Voter ID number, full name, and date of birth manually using the Enter Manually tab.' },
+                { text: 'Option 2: Upload a photo of your voter card for automatic extraction.', speak: 'Or upload a photo of your voter ID card. The system will try to extract details automatically using OCR.' },
+                { text: 'After filling details, click Verify to confirm your identity.', speak: 'Once you have filled in your details, click the Verify button. After verification, you will be redirected to the dashboard.' },
+            ],
+            commands: [
+                {
+                    patterns: ['manual', 'enter manually', 'type details'],
+                    handler: () => { switchTab('manual'); VoiceEngine.speak('Switched to manual entry. Enter your voter ID and details.'); },
+                    description: 'Switch to manual entry tab'
+                },
+                {
+                    patterns: ['upload', 'upload card', 'scan card', 'upload voter card'],
+                    handler: () => { switchTab('upload'); VoiceEngine.speak('Switched to upload tab. Upload a photo of your voter card.'); },
+                    description: 'Switch to upload tab'
+                },
+                {
+                    patterns: ['verify', 'submit', 'verify identity', 'confirm'],
+                    handler: () => {
+                        const manualForm = document.getElementById('manual-form');
+                        if (document.getElementById('manual-panel').classList.contains('active')) {
+                            manualForm.requestSubmit();
+                            VoiceEngine.speak('Submitting your verification.');
+                        } else {
+                            VoiceEngine.speak('Please use the manual tab or extract details from your card first.');
+                        }
+                    },
+                    description: 'Submit verification'
+                }
+            ]
+        });
     </script>
 </body>
 </html>

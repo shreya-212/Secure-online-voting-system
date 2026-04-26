@@ -6,6 +6,8 @@
     <meta name="description" content="Browse active elections and find elections you're eligible to vote in.">
     <title>SecureVote — Elections</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/voice.css">
+    <link rel="stylesheet" href="/static/css/translate.css">
 </head>
 <body>
     <!-- Navbar -->
@@ -19,6 +21,7 @@
                 <li><a href="/dashboard/">Dashboard</a></li>
                 <li><a href="/elections/" class="active">Elections</a></li>
                 <li><a href="/results/">Results</a></li>
+                <li><a href="/profile/">Profile</a></li>
             </ul>
             <div class="nav-user">
                 <span class="user-name" id="user-display"></span>
@@ -133,6 +136,94 @@
         function handleLogout() { clearAuth(); window.location.href = '/'; }
 
         loadElections();
+    </script>
+    <script src="/static/js/translations.js"></script>
+    <script src="/static/js/translate.js"></script>
+    <script src="/static/js/voice.js"></script>
+    <script>
+        function readElectionsList() {
+            const cards = document.querySelectorAll('.election-card');
+            if (cards.length === 0) {
+                return 'There are no elections to show right now.';
+            }
+            let text = `There are ${cards.length} elections. `;
+            cards.forEach((card, i) => {
+                const title = card.querySelector('.election-title')?.textContent || 'Unknown';
+                const level = card.querySelector('.election-level')?.textContent || '';
+                const status = card.querySelector('.election-status')?.textContent || '';
+                text += `Number ${i+1}: ${title}, ${level} level, status ${status}. `;
+            });
+            text += 'Say select election followed by the number to vote.';
+            return text;
+        }
+
+        VoiceEngine.init({
+            guideSteps: [
+                { text: 'This is the Elections page. Browse all available elections.', speak: 'This is the Elections page. You can browse all available elections here.' },
+                { text: 'Use the filter buttons to show National, State, or Village level elections.', speak: 'Use the filter buttons at the top, or say show national, show state, or show village to filter.' },
+                { text: 'Each election card shows the title, level, dates, and number of candidates.', speak: 'Each election card shows the title, level, dates, and number of candidates.' },
+                {
+                    text: 'I will now read out the available elections for you.',
+                    speak: '',
+                    action: () => {
+                        setTimeout(() => VoiceEngine.speak(readElectionsList()), 500);
+                    }
+                },
+                { text: 'Say "select election [number]" to open an election and vote.', speak: 'To vote, say select election followed by the number. For example, select election 1.' },
+            ],
+            commands: [
+                {
+                    patterns: ['show all', 'all elections'],
+                    handler: () => { filterElections('all', document.querySelector('.filter-chip')); VoiceEngine.speak('Showing all elections. ' + readElectionsList()); },
+                    description: 'Show all elections'
+                },
+                {
+                    patterns: ['show national', 'national elections', 'national'],
+                    handler: () => { filterElections('national', null); VoiceEngine.speak('Showing national elections. ' + readElectionsList()); },
+                    description: 'Filter national elections'
+                },
+                {
+                    patterns: ['show state', 'state elections', 'state'],
+                    handler: () => { filterElections('state', null); VoiceEngine.speak('Showing state elections. ' + readElectionsList()); },
+                    description: 'Filter state elections'
+                },
+                {
+                    patterns: ['show village', 'village elections', 'village'],
+                    handler: () => { filterElections('village', null); VoiceEngine.speak('Showing village elections. ' + readElectionsList()); },
+                    description: 'Filter village elections'
+                },
+                {
+                    patterns: ['eligible', 'my elections', 'eligible for me'],
+                    handler: () => { filterElections('eligible', null); VoiceEngine.speak('Showing elections you are eligible for.'); },
+                    description: 'Show eligible elections'
+                },
+                {
+                    patterns: ['read elections', 'list elections', 'what elections'],
+                    handler: () => VoiceEngine.speak(readElectionsList()),
+                    description: 'Read all elections aloud'
+                },
+                {
+                    patterns: [/select election (\d+)/, /election number (\d+)/, /open election (\d+)/, /vote in (\d+)/],
+                    handler: (text, match) => {
+                        const num = parseInt(match[1]) - 1;
+                        const cards = document.querySelectorAll('.election-card');
+                        if (cards[num]) {
+                            const voteLink = cards[num].querySelector('a.btn');
+                            if (voteLink) {
+                                const title = cards[num].querySelector('.election-title')?.textContent || '';
+                                VoiceEngine.speak('Opening ' + title);
+                                setTimeout(() => voteLink.click(), 800);
+                            } else {
+                                VoiceEngine.speak('That election is not open for voting yet.');
+                            }
+                        } else {
+                            VoiceEngine.speak('Election number ' + (num+1) + ' was not found.');
+                        }
+                    },
+                    description: 'Select an election by number'
+                }
+            ]
+        });
     </script>
 </body>
 </html>

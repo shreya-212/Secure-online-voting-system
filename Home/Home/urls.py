@@ -27,6 +27,7 @@ urlpatterns = [
     path('admin-panel/', TemplateView.as_view(template_name='admin.html'), name='admin_panel'),
     path('verify/', TemplateView.as_view(template_name='verify.html'), name='verify'),
     path('register-face/', TemplateView.as_view(template_name='register_face.html'), name='register_face'),
+    path('profile/', TemplateView.as_view(template_name='profile.html'), name='profile'),
 ]
 
 if settings.DEBUG:

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVote — My Profile</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/voice.css">
+    <link rel="stylesheet" href="/static/css/translate.css">
+    <style>
+        :root {
+            --profile-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        .profile-container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .profile-hero {
+            position: relative;
+            background: var(--profile-gradient);
+            border-radius: 24px;
+            padding: 60px 40px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+
+        .profile-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 400px;
+            height: 400px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            filter: blur(60px);
+        }
+
+        .hero-img-wrapper {
+            position: relative;
+            flex-shrink: 0;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            padding: 6px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .hero-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #222;
+        }
+
+        .hero-content h1 {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .hero-content p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 30px;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text);
+        }
+
+        .detail-item {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .history-item {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .history-item:hover {
+            transform: translateX(10px);
+            background: rgba(255,255,255,0.05);
+            border-color: var(--accent);
+        }
+
+        .election-info h4 {
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+
+        .election-info p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .vote-confirmed {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            padding: 6px 14px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        @media (max-width: 850px) {
+            .profile-grid { grid-template-columns: 1fr; }
+            .profile-hero { flex-direction: column; text-align: center; padding: 40px 20px; }
+            .hero-img-wrapper { width: 140px; height: 140px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/dashboard/" class="nav-brand"><div class="logo">🗳️</div> SecureVote</a>
+            <ul class="nav-links">
+                <li><a href="/dashboard/">Dashboard</a></li>
+                <li><a href="/elections/">Elections</a></li>
+                <li><a href="/results/">Results</a></li>
+                <li><a href="/profile/" class="active">Profile</a></li>
+            </ul>
+            <div class="nav-user">
+                <span class="user-name" id="user-display"></span>
+                <button class="btn btn-sm btn-secondary" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="profile-container">
+        <!-- Hero Section -->
+        <div class="profile-hero">
+            <div class="hero-img-wrapper">
+                <img id="profile-img" src="/static/img/default-avatar.png" alt="User Profile" class="hero-img">
+            </div>
+            <div class="hero-content">
+                <h1 id="profile-name">Voter Profile</h1>
+                <p id="profile-voter-id">VID-XXXXXXXXXX</p>
+                <div id="verify-badge">
+                    <div class="status-badge">
+                        <span>⏳ Checking Status...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-grid">
+            <!-- Left: Personal Details -->
+            <div class="glass-card">
+                <h3 class="section-title"><span>👤</span> Personal Details</h3>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Email Address</span>
+                    <span class="detail-value" id="profile-email">—</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Phone Number</span>
+                    <span class="detail-value" id="profile-phone">—</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">State / Region</span>
+                    <span class="detail-value" id="profile-state">—</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Account Role</span>
+                    <span class="detail-value" id="profile-role">—</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Member Since</span>
+                    <span class="detail-value" id="profile-joined">—</span>
+                </div>
+            </div>
+
+            <!-- Right: Voting History -->
+            <div class="glass-card">
+                <h3 class="section-title"><span>📜</span> Voting History</h3>
+                <div class="history-list" id="voted-elections-list">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        if (!requireAuth()) {}
+
+        async function loadProfile() {
+            try {
+                const profile = await getProfile();
+                
+                document.getElementById('profile-name').textContent = `${profile.first_name} ${profile.last_name}`;
+                document.getElementById('profile-voter-id').textContent = profile.voter_id || 'ID NOT ASSIGNED';
+                document.getElementById('user-display').textContent = profile.first_name;
+
+                if (profile.profile_picture) {
+                    document.getElementById('profile-img').src = profile.profile_picture;
+                }
+
+                const badge = document.getElementById('verify-badge');
+                if (profile.is_verified) {
+                    badge.innerHTML = '<div class="status-badge"><span>✅ VERIFIED VOTER</span></div>';
+                } else {
+                    badge.innerHTML = '<div class="status-badge" style="background:rgba(239,68,68,0.2); border-color:rgba(239,68,68,0.3)"><span>❌ UNVERIFIED</span></div>';
+                }
+
+                document.getElementById('profile-email').textContent = profile.email;
+                document.getElementById('profile-phone').textContent = profile.phone || 'Not provided';
+                document.getElementById('profile-state').textContent = profile.state || 'National';
+                document.getElementById('profile-role').textContent = profile.role.toUpperCase();
+                document.getElementById('profile-joined').textContent = new Date(profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                const list = document.getElementById('voted-elections-list');
+                if (!profile.voted_elections || profile.voted_elections.length === 0) {
+                    list.innerHTML = `
+                        <div style="text-align:center; padding:40px; opacity:0.6">
+                            <div style="font-size:3rem; margin-bottom:15px">🗳️</div>
+                            <p>You haven't participated in any elections yet.</p>
+                            <a href="/elections/" class="btn btn-sm btn-primary mt-2">View Elections</a>
+                        </div>
+                    `;
+                } else {
+                    list.innerHTML = profile.voted_elections.map(e => `
+                        <div class="history-item">
+                            <div class="election-info">
+                                <h4>${e.title}</h4>
+                                <p>Casted on: ${formatDate(e.date_voted)}</p>
+                            </div>
+                            <div class="vote-confirmed">
+                                <span>✔</span> RECORDED
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+            } catch (err) {
+                console.error(err);
+                showToast('Error loading profile', 'error');
+            }
+        }
+
+        function handleLogout() {
+            clearAuth();
+            window.location.href = '/';
+        }
+
+        loadProfile();
+    </script>
+    <script src="/static/js/translations.js"></script>
+    <script src="/static/js/translate.js"></script>
+    <script src="/static/js/voice.js"></script>
+</body>
+</html>

@@ -47,15 +47,35 @@ class LoginSerializer(serializers.Serializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    has_face_registered = serializers.SerializerMethodField()
+    voted_elections = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
             'id', 'email', 'username', 'first_name', 'last_name',
             'phone', 'voter_id', 'role', 'state', 'district',
-            'village', 'is_verified', 'date_of_birth',
-            'created_at', 'updated_at',
+            'village', 'is_verified', 'date_of_birth', 'profile_picture',
+            'created_at', 'updated_at', 'has_face_registered', 'voted_elections'
         ]
-        read_only_fields = ['id', 'email', 'voter_id', 'role', 'is_verified', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'email', 'voter_id', 'role', 'is_verified', 'created_at', 'updated_at', 'has_face_registered', 'voted_elections', 'profile_picture']
+
+    def get_has_face_registered(self, obj):
+        if not obj.voter_id:
+            return False
+        from accounts.services.faiss_service import faiss_service
+        return faiss_service.has_face(obj.voter_id)
+
+    def get_voted_elections(self, obj):
+        from voting.models import VoteRecord
+        records = VoteRecord.objects.filter(user=obj).select_related('election')
+        return [
+            {
+                'id': r.election.id,
+                'title': r.election.title,
+                'date_voted': r.created_at
+            } for r in records
+        ]
 
 
 class OTPVerifySerializer(serializers.Serializer):

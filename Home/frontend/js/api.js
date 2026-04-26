@@ -194,13 +194,21 @@ async function createCandidate(data) {
 
 // ─── Voting API ───
 
-async function castVote(electionId, candidateId) {
+async function castVote(electionId, candidateId, otpCode) {
     return apiCall('/voting/cast/', {
         method: 'POST',
         body: JSON.stringify({
             election_id: electionId,
             candidate_id: candidateId,
+            otp_code: otpCode,
         }),
+    });
+}
+
+async function sendVoteOTP(email) {
+    return apiCall('/voting/send-otp/', {
+        method: 'POST',
+        body: JSON.stringify({ email: email })
     });
 }
 

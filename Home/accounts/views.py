@@ -9,6 +9,8 @@ import random
 import re
 import io
 import traceback
+from django.core.mail import send_mail
+from django.conf import settings
 
 from .models import User, OTP, VoterVerification
 from .serializers import (
@@ -34,8 +36,21 @@ class RegisterView(generics.CreateAPIView):
             code=otp_code,
             expires_at=timezone.now() + timedelta(minutes=10),
         )
-        # Mock: print OTP to console (replace with Twilio/FCM in prod)
-        print(f"[MOCK OTP] User: {user.email} | OTP: {otp_code}")
+        # Send actual OTP via Email
+        subject = 'SecureVote - Verify Your Account'
+        message = f'Hello {user.first_name},\n\nYour OTP for verifying your SecureVote account is: {otp_code}\n\nThis OTP will expire in 10 minutes.\n\nThank you,\nSecureVote Team'
+        
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.EMAIL_HOST_USER,
+                [user.email],
+                fail_silently=False,
+            )
+            print(f"OTP sent successfully to {user.email}")
+        except Exception as e:
+            print(f"Failed to send email to {user.email}: {str(e)}")
 
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
@@ -291,6 +306,13 @@ class RegisterFaceView(APIView):
             image_bytes = image_file.read()
             # Register in FAISS
             faiss_service.register_face(user.voter_id, image_bytes)
+            
+            # Save as profile picture if not set
+            if not user.profile_picture:
+                image_file.seek(0)
+                user.profile_picture.save(f"profile_{user.id}.jpg", image_file)
+                user.save()
+                
             return Response({'message': 'Face successfully registered.'})
         except ValueError as e:
             return Response({'error': str(e)}, status=422)

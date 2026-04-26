@@ -1,0 +1,468 @@
+/* ═══════════════════════════════════════════════════════════
+   Voice Control UI — SecureVote
+   Floating mic, Guide Me panel, transcription bubble
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Floating Voice Controls Container ─── */
+.voice-controls {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    z-index: 9999;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ─── Mic Button ─── */
+.voice-mic-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4), 0 0 0 0 rgba(79, 70, 229, 0);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.voice-mic-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 28px rgba(79, 70, 229, 0.55);
+}
+
+.voice-mic-btn:active {
+    transform: scale(0.95);
+}
+
+.voice-mic-btn.listening {
+    background: linear-gradient(135deg, #ef4444, #f97316);
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.5);
+    animation: mic-pulse 1.5s ease-in-out infinite;
+}
+
+.voice-mic-btn.speaking {
+    background: linear-gradient(135deg, #10b981, #06b6d4);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.5);
+}
+
+@keyframes mic-pulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(239, 68, 68, 0.5), 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 4px 20px rgba(239, 68, 68, 0.5), 0 0 0 16px rgba(239, 68, 68, 0); }
+}
+
+/* Ripple effect on mic */
+.voice-mic-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.voice-mic-btn.listening::after {
+    opacity: 1;
+    animation: mic-ripple 2s ease-out infinite;
+}
+
+@keyframes mic-ripple {
+    0% { transform: scale(1); opacity: 0.4; }
+    100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* ─── Guide Me Button ─── */
+.voice-guide-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    background: rgba(30, 30, 46, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #e2e8f0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.voice-guide-btn:hover {
+    transform: scale(1.08);
+    background: rgba(79, 70, 229, 0.6);
+    border-color: rgba(79, 70, 229, 0.5);
+}
+
+.voice-guide-btn.active {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    border-color: transparent;
+}
+
+/* ─── Transcription Bubble ─── */
+.voice-transcript {
+    position: fixed;
+    bottom: 100px;
+    right: 24px;
+    max-width: 360px;
+    min-width: 200px;
+    padding: 14px 18px;
+    border-radius: 16px 16px 4px 16px;
+    background: rgba(15, 15, 26, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: 9998;
+}
+
+.voice-transcript.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.voice-transcript .transcript-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #a78bfa;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.voice-transcript .transcript-text {
+    font-size: 0.95rem;
+    color: #f1f5f9;
+}
+
+.voice-transcript .transcript-text.interim {
+    color: #94a3b8;
+    font-style: italic;
+}
+
+/* ─── Voice Status Indicator ─── */
+.voice-status {
+    position: fixed;
+    bottom: 92px;
+    right: 92px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+    z-index: 9998;
+    white-space: nowrap;
+}
+
+.voice-status.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.voice-status.listening {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.voice-status.speaking {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* Waveform dots while listening */
+.voice-waveform {
+    display: inline-flex;
+    gap: 3px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.voice-waveform .bar {
+    width: 3px;
+    height: 12px;
+    border-radius: 2px;
+    background: currentColor;
+    animation: waveform 0.8s ease-in-out infinite;
+}
+
+.voice-waveform .bar:nth-child(2) { animation-delay: 0.1s; }
+.voice-waveform .bar:nth-child(3) { animation-delay: 0.2s; }
+.voice-waveform .bar:nth-child(4) { animation-delay: 0.3s; }
+
+@keyframes waveform {
+    0%, 100% { height: 4px; }
+    50% { height: 16px; }
+}
+
+/* ─── Guide Me Panel ─── */
+.guide-panel {
+    position: fixed;
+    top: 0;
+    right: -440px;
+    width: 420px;
+    max-width: 90vw;
+    height: 100vh;
+    background: rgba(15, 15, 26, 0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: -8px 0 40px rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    color: #e2e8f0;
+}
+
+.guide-panel.open {
+    right: 0;
+}
+
+.guide-panel-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.guide-panel-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: #f1f5f9;
+}
+
+.guide-panel-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+}
+
+.guide-panel-close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.guide-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+}
+
+.guide-step {
+    padding: 14px 16px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.guide-step:hover {
+    background: rgba(79, 70, 229, 0.08);
+    border-color: rgba(79, 70, 229, 0.2);
+}
+
+.guide-step.active {
+    background: rgba(79, 70, 229, 0.12);
+    border-color: rgba(79, 70, 229, 0.4);
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.1);
+}
+
+.guide-step.done {
+    opacity: 0.5;
+}
+
+.guide-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(79, 70, 229, 0.2);
+    color: #a78bfa;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-right: 10px;
+}
+
+.guide-step.active .guide-step-number {
+    background: #4f46e5;
+    color: #fff;
+}
+
+.guide-step.done .guide-step-number {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}
+
+.guide-step-text {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #cbd5e1;
+}
+
+.guide-step.active .guide-step-text {
+    color: #f1f5f9;
+}
+
+/* Guide panel footer controls */
+.guide-panel-footer {
+    padding: 16px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    gap: 10px;
+}
+
+.guide-panel-footer button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.guide-panel-footer button:hover {
+    background: rgba(79, 70, 229, 0.2);
+    border-color: rgba(79, 70, 229, 0.4);
+}
+
+.guide-panel-footer button.primary {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    border-color: transparent;
+    color: #fff;
+}
+
+.guide-panel-footer button.primary:hover {
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+}
+
+/* ─── Guide Panel Overlay ─── */
+.guide-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.guide-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ─── Voice Command Hint Toast ─── */
+.voice-hint {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: rgba(15, 15, 26, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(79, 70, 229, 0.3);
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    z-index: 9998;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    max-width: 500px;
+    text-align: center;
+}
+
+.voice-hint.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.voice-hint code {
+    background: rgba(79, 70, 229, 0.2);
+    color: #a78bfa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 480px) {
+    .voice-controls {
+        bottom: 16px;
+        right: 16px;
+    }
+
+    .voice-mic-btn {
+        width: 52px;
+        height: 52px;
+        font-size: 1.3rem;
+    }
+
+    .voice-guide-btn {
+        width: 42px;
+        height: 42px;
+    }
+
+    .voice-transcript {
+        right: 16px;
+        bottom: 85px;
+        max-width: 280px;
+    }
+
+    .guide-panel {
+        width: 100vw;
+        max-width: 100vw;
+    }
+}

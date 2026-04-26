@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SecureVote — Results</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/translate.css">
+    <link rel="stylesheet" href="/static/css/voice.css">
 </head>
 <body>
     <nav class="navbar"><div class="container">
@@ -13,6 +15,7 @@
             <li><a href="/dashboard/">Dashboard</a></li>
             <li><a href="/elections/">Elections</a></li>
             <li><a href="/results/" class="active">Results</a></li>
+            <li><a href="/profile/">Profile</a></li>
         </ul>
         <div class="nav-user">
             <span class="user-name" id="user-display"></span>
@@ -85,6 +88,70 @@
             }).join('');
         }catch(e){document.getElementById('r-bars').innerHTML=`<div class="alert alert-warning">⚠️ ${e.data?.error||'Cannot load results.'}</div>`;}
     }
+    </script>
+    <script src="/static/js/translations.js"></script>
+    <script src="/static/js/translate.js"></script>
+    <script src="/static/js/voice.js"></script>
+    <script>
+        VoiceEngine.init({
+            guideSteps: [
+                { text: 'This is the Election Results page.', speak: 'This is the Election Results page. Here you can view final results for completed elections.' },
+                { text: 'Click on an election card to view its detailed results.', speak: 'Click on an election card to view its detailed results, including vote counts and the winner.' },
+                {
+                    text: 'I will read the results if available.',
+                    speak: '',
+                    action: () => {
+                        const winner = document.getElementById('w-name')?.textContent;
+                        const party = document.getElementById('w-party')?.textContent;
+                        const title = document.getElementById('r-title')?.textContent;
+                        if (winner && winner !== '—') {
+                            setTimeout(() => VoiceEngine.speak(`The winner of ${title} is ${winner}, ${party}.`), 500);
+                        } else {
+                            const cards = document.querySelectorAll('.election-card');
+                            if (cards.length > 0) {
+                                let text = `There are ${cards.length} completed elections. `;
+                                cards.forEach((c, i) => {
+                                    const t = c.querySelector('.election-title')?.textContent || '';
+                                    text += `Number ${i+1}: ${t}. `;
+                                });
+                                setTimeout(() => VoiceEngine.speak(text), 500);
+                            } else {
+                                setTimeout(() => VoiceEngine.speak('No completed elections found yet.'), 500);
+                            }
+                        }
+                    }
+                },
+            ],
+            commands: [
+                {
+                    patterns: ['read results', 'who won', 'winner', 'announce winner'],
+                    handler: () => {
+                        const winner = document.getElementById('w-name')?.textContent;
+                        const party = document.getElementById('w-party')?.textContent;
+                        const title = document.getElementById('r-title')?.textContent;
+                        if (winner && winner !== '—') {
+                            VoiceEngine.speak(`The winner of ${title} is ${winner}, ${party}.`);
+                        } else {
+                            VoiceEngine.speak('No results are displayed right now. Select an election first.');
+                        }
+                    },
+                    description: 'Read election results aloud'
+                },
+                {
+                    patterns: [/select election (\d+)/, /election (\d+)/, /open (\d+)/],
+                    handler: (text, match) => {
+                        const num = parseInt(match[1]) - 1;
+                        const cards = document.querySelectorAll('.election-card');
+                        if (cards[num]) {
+                            cards[num].click();
+                        } else {
+                            VoiceEngine.speak('Election not found.');
+                        }
+                    },
+                    description: 'View election results by number'
+                }
+            ]
+        });
     </script>
 </body>
 </html>

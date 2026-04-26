@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SecureVote — Admin Panel</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/translate.css">
+    <link rel="stylesheet" href="/static/css/voice.css">
 </head>
 <body>
     <nav class="navbar"><div class="container">
@@ -177,6 +179,43 @@
     }
 
     loadAdmin();
+    </script>
+    <script src="/static/js/translations.js"></script>
+    <script src="/static/js/translate.js"></script>
+    <script src="/static/js/voice.js"></script>
+    <script>
+        VoiceEngine.init({
+            guideSteps: [
+                { text: 'This is the Admin Panel for managing the voting system.', speak: 'Welcome to the Admin Panel. From here you can manage elections, candidates, and view analytics.' },
+                {
+                    text: 'View system statistics: total users, verified users, elections, and votes.',
+                    speak: '',
+                    action: () => {
+                        const users = document.getElementById('s-users')?.textContent || '0';
+                        const verified = document.getElementById('s-verified')?.textContent || '0';
+                        const elections = document.getElementById('s-elections')?.textContent || '0';
+                        const votes = document.getElementById('s-votes')?.textContent || '0';
+                        setTimeout(() => VoiceEngine.speak(`System stats: ${users} total users, ${verified} verified, ${elections} elections, and ${votes} total votes cast.`), 500);
+                    }
+                },
+                { text: 'Create Election form lets you set up new elections with title, level, dates.', speak: 'You can create new elections by filling in the title, level, constituency, and start and end dates.' },
+                { text: 'Add Candidate form lets you add candidates to existing elections.', speak: 'Use the Add Candidate form to add candidates with their name, party, and symbol to any election.' },
+                { text: 'The Users and Elections tables show all registered data.', speak: 'Below you can see tables of all registered users and all elections in the system.' },
+            ],
+            commands: [
+                {
+                    patterns: ['read stats', 'show stats', 'system stats', 'analytics'],
+                    handler: () => {
+                        const users = document.getElementById('s-users')?.textContent || '0';
+                        const verified = document.getElementById('s-verified')?.textContent || '0';
+                        const elections = document.getElementById('s-elections')?.textContent || '0';
+                        const votes = document.getElementById('s-votes')?.textContent || '0';
+                        VoiceEngine.speak(`System stats: ${users} total users, ${verified} verified, ${elections} elections, and ${votes} total votes cast.`);
+                    },
+                    description: 'Read admin statistics'
+                }
+            ]
+        });
     </script>
 </body>
 </html>
