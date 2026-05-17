@@ -21,4 +21,11 @@ urlpatterns = [
     path('verify-face/', views.VerifyFaceView.as_view(), name='verify_face'),
     path('password-reset-request/', views.RequestPasswordResetView.as_view(), name='password_reset_request'),
     path('password-reset-confirm/', views.ResetPasswordView.as_view(), name='password_reset_confirm'),
+
+    # ── Chatbot Registration Request (Two-Stage Approval) ──
+    path('registration-requests/', views.RegistrationRequestListView.as_view(), name='registration_request_list'),
+    path('registration-requests/submit/', views.SubmitRegistrationRequestView.as_view(), name='registration_request_submit'),
+    path('registration-requests/<int:pk>/forward/', views.ForwardToVoterAdminView.as_view(), name='registration_request_forward'),
+    path('registration-requests/<int:pk>/approve/', views.ApproveRegistrationView.as_view(), name='registration_request_approve'),
+    path('registration-requests/<int:pk>/reject/', views.RejectRegistrationView.as_view(), name='registration_request_reject'),
 ]

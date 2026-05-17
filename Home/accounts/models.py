@@ -230,3 +230,61 @@ class VoterVerification(models.Model):
         if self.submitted_voter_id:
             self.user.voter_id = self.submitted_voter_id
         self.user.save()
+
+
+# ─── Chatbot Registration Request (Two-Stage Approval) ───
+
+class RegistrationRequest(models.Model):
+    """
+    Voter registration request submitted via the login-page chatbot.
+    Flows through two approval stages:
+      pending_village_admin → pending_voter_admin → approved / rejected
+    """
+
+    STATUS_CHOICES = (
+        ('pending_village_admin', 'Pending Village Admin'),
+        ('pending_voter_admin',   'Pending Voter Administrative'),
+        ('approved',              'Approved'),
+        ('rejected',              'Rejected'),
+    )
+
+    # Submitted by the citizen
+    voter_id       = models.CharField(max_length=30)
+    aadhaar_last4  = models.CharField(max_length=4, help_text='Last 4 digits of Aadhaar')
+    full_name      = models.CharField(max_length=150)
+    date_of_birth  = models.CharField(max_length=20, blank=True)   # stored as string from chatbot
+    email          = models.EmailField()
+    phone          = models.CharField(max_length=15, blank=True)
+    village        = models.CharField(max_length=100)
+    district       = models.CharField(max_length=100, blank=True)
+    state          = models.CharField(max_length=100)
+
+    # Workflow
+    status         = models.CharField(max_length=30, choices=STATUS_CHOICES,
+                                      default='pending_village_admin')
+
+    # AI analysis
+    ai_score       = models.IntegerField(default=0, help_text='Genuineness score 0-100')
+    ai_details     = models.JSONField(default=dict, help_text='Breakdown of AI checks')
+
+    # Admin notes
+    village_admin_notes = models.TextField(blank=True)
+    voter_admin_notes   = models.TextField(blank=True)
+
+    # Timestamps
+    created_at     = models.DateTimeField(auto_now_add=True)
+    updated_at     = models.DateTimeField(auto_now=True)
+    forwarded_at   = models.DateTimeField(null=True, blank=True)
+    resolved_at    = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'registration_requests'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['voter_id']),
+            models.Index(fields=['email']),
+        ]
+
+    def __str__(self):
+        return f"RegRequest: {self.full_name} ({self.voter_id}) — {self.status}"

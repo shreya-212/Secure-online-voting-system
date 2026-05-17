@@ -12,11 +12,12 @@ import traceback
 from django.core.mail import send_mail
 from django.conf import settings
 
-from .models import User, OTP, VoterVerification, VoterRoll, VillageAdmin
+from .models import User, OTP, VoterVerification, VoterRoll, VillageAdmin, RegistrationRequest
 from .serializers import (
     RegisterSerializer, LoginSerializer, ProfileSerializer,
-    OTPVerifySerializer, UserListSerializer, VoterVerificationSerializer, 
-    VoterRollSerializer, VillageAdminSerializer
+    OTPVerifySerializer, UserListSerializer, VoterVerificationSerializer,
+    VoterRollSerializer, VillageAdminSerializer,
+    RegistrationRequestSerializer, RegistrationRequestSubmitSerializer,
 )
 
 
@@ -167,6 +168,19 @@ class VillageAdminAPIView(APIView):
         if request.user.role not in ('admin', 'officer'):
             return Response(status=status.HTTP_403_FORBIDDEN)
         data = request.data.copy()
+        
+        # Enforce exactly one admin per village
+        village = data.get('village')
+        district = data.get('district')
+        state = data.get('state')
+        
+        if village and district and state:
+            if VillageAdmin.objects.filter(village=village, district=district, state=state).exists():
+                return Response(
+                    {'detail': 'A Village Admin already exists for this village. Only one admin per village is permitted.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
         serializer = VillageAdminSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -694,3 +708,222 @@ class ResetPasswordView(APIView):
         otp.save()
 
         return Response({'message': 'Password reset successful. You can now log in.'})
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Chatbot Registration Request Views (Two-Stage Approval)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class SubmitRegistrationRequestView(APIView):
+    """
+    PUBLIC endpoint — called by the login-page chatbot.
+    Accepts voter details, runs AI scoring, creates a RegistrationRequest
+    with status=pending_village_admin.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        from .services.ai_verification import compute_genuineness_score
+
+        serializer = RegistrationRequestSubmitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        # Prevent duplicate pending submissions
+        voter_id = data['voter_id']
+        existing = RegistrationRequest.objects.filter(
+            voter_id=voter_id,
+            status__in=['pending_village_admin', 'pending_voter_admin']
+        ).first()
+        if existing:
+            return Response(
+                {'error': 'A registration request for this Voter ID is already pending review.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Run AI analysis
+        ai_result = compute_genuineness_score(
+            voter_id=voter_id,
+            aadhaar_last4=data.get('aadhaar_last4', ''),
+            full_name=data.get('full_name', ''),
+            date_of_birth=data.get('date_of_birth', ''),
+            email=data.get('email', ''),
+            phone=data.get('phone', ''),
+            village=data.get('village', ''),
+            state=data.get('state', ''),
+        )
+
+        reg_req = RegistrationRequest.objects.create(
+            voter_id=voter_id,
+            aadhaar_last4=data.get('aadhaar_last4', ''),
+            full_name=data.get('full_name', ''),
+            date_of_birth=data.get('date_of_birth', ''),
+            email=data['email'],
+            phone=data.get('phone', ''),
+            village=data['village'],
+            district=data.get('district', ''),
+            state=data['state'],
+            status='pending_village_admin',
+            ai_score=ai_result['score'],
+            ai_details=ai_result,
+        )
+
+        return Response({
+            'success': True,
+            'message': 'Your registration request has been submitted! The Village Admin will review it shortly.',
+            'request_id': reg_req.id,
+            'ai_score': ai_result['score'],
+            'ai_label': ai_result['label'],
+        }, status=status.HTTP_201_CREATED)
+
+
+class RegistrationRequestListView(APIView):
+    """
+    Admin/officer endpoint — returns all requests filtered by status.
+    Query param: ?status=pending_village_admin  (or pending_voter_admin / approved / rejected)
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in ('admin', 'officer') and not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        qs = RegistrationRequest.objects.all()
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        # Village Admins only see requests for their village
+        if request.user.role == 'admin' and request.user.village:
+            qs = qs.filter(village=request.user.village, state=request.user.state)
+
+        serializer = RegistrationRequestSerializer(qs, many=True)
+        return Response(serializer.data)
+
+
+class ForwardToVoterAdminView(APIView):
+    """
+    Village Admin forwards an approved request to the Voter Administrative.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        if request.user.role not in ('admin', 'officer') and not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            req = RegistrationRequest.objects.get(pk=pk)
+        except RegistrationRequest.DoesNotExist:
+            return Response({'error': 'Request not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if req.status != 'pending_village_admin':
+            return Response(
+                {'error': f'Cannot forward. Current status: {req.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        notes = request.data.get('notes', '')
+        req.status = 'pending_voter_admin'
+        req.village_admin_notes = notes
+        req.forwarded_at = timezone.now()
+        req.save()
+
+        return Response({
+            'success': True,
+            'message': 'Request forwarded to Voter Administrative for final approval.',
+        })
+
+
+class ApproveRegistrationView(APIView):
+    """
+    Voter Administrative approves the request:
+    - Creates a VoterRoll entry so the citizen can now register online.
+    - Marks request as approved.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        # Only superadmin / staff level
+        if not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            req = RegistrationRequest.objects.get(pk=pk)
+        except RegistrationRequest.DoesNotExist:
+            return Response({'error': 'Request not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if req.status != 'pending_voter_admin':
+            return Response(
+                {'error': f'Cannot approve. Current status: {req.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if already in VoterRoll
+        if VoterRoll.objects.filter(voter_id=req.voter_id).exists():
+            return Response(
+                {'error': 'Voter ID already exists in the Voter Roll.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        notes = request.data.get('notes', '')
+
+        # Create VoterRoll entry — citizen can now register
+        VoterRoll.objects.create(
+            voter_id=req.voter_id,
+            email=req.email,
+            mobile_number=req.phone,
+            full_name=req.full_name,
+            village=req.village,
+            district=req.district,
+            state=req.state,
+            is_registered=False,
+            designated_role='voter',
+        )
+
+        req.status = 'approved'
+        req.voter_admin_notes = notes
+        req.resolved_at = timezone.now()
+        req.save()
+
+        return Response({
+            'success': True,
+            'message': f'{req.full_name} has been approved and added to the Voter Roll. They can now register online.',
+        })
+
+
+class RejectRegistrationView(APIView):
+    """
+    Reject a registration request at any stage.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        if request.user.role not in ('admin', 'officer') and not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            req = RegistrationRequest.objects.get(pk=pk)
+        except RegistrationRequest.DoesNotExist:
+            return Response({'error': 'Request not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if req.status in ('approved', 'rejected'):
+            return Response(
+                {'error': f'Request is already {req.status}.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        notes = request.data.get('notes', 'No reason provided.')
+        # Store notes in the appropriate field based on who is rejecting
+        if req.status == 'pending_village_admin':
+            req.village_admin_notes = notes
+        else:
+            req.voter_admin_notes = notes
+
+        req.status = 'rejected'
+        req.resolved_at = timezone.now()
+        req.save()
+
+        return Response({
+            'success': True,
+            'message': 'Registration request has been rejected.',
+        })

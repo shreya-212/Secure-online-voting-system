@@ -20,7 +20,7 @@ class ElectionSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'level', 'constituency',
             'state', 'district', 'village', 'start_time', 'end_time',
-            'status', 'is_active', 'created_by', 'created_by_name',
+            'status', 'approval_status', 'is_active', 'created_by', 'created_by_name',
             'total_candidates', 'candidates', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'created_by']
@@ -41,7 +41,7 @@ class ElectionListSerializer(serializers.ModelSerializer):
         model = Election
         fields = [
             'id', 'title', 'level', 'constituency', 'state', 'district', 'village',
-            'start_time', 'end_time', 'status', 'is_active',
+            'start_time', 'end_time', 'status', 'approval_status', 'is_active',
             'total_candidates', 'created_at',
         ]
 

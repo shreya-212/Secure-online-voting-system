@@ -3,66 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SecureVote — View and manage your voter profile.">
     <title>SecureVote — My Profile</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/css/voice.css">
     <link rel="stylesheet" href="/static/css/translate.css">
     <style>
-        :root {
-            --profile-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.1);
-        }
+        /* ═══════════════════════════════════════════
+           PROFILE — Dark Brown + Gold Theme
+           ═══════════════════════════════════════════ */
 
         .profile-container {
-            max-width: 1000px;
-            margin: 40px auto;
-            padding: 0 20px;
-            animation: fadeIn 0.8s ease-out;
+            max-width: 1020px;
+            margin: 0 auto;
+            padding: 32px 20px 60px;
+            animation: fadeInUp 0.6s cubic-bezier(0.16,1,0.3,1) both;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
+        /* ── Hero Banner ── */
         .profile-hero {
             position: relative;
-            background: var(--profile-gradient);
-            border-radius: 24px;
-            padding: 60px 40px;
-            color: white;
+            background: linear-gradient(135deg, #2D2218 0%, #3A2510 40%, #4A300A 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 48px 40px;
+            color: var(--text-primary);
             display: flex;
             align-items: center;
-            gap: 40px;
+            gap: 36px;
             overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            margin-bottom: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 30px rgba(200,134,42,.08);
+            margin-bottom: 28px;
         }
 
         .profile-hero::before {
             content: '';
             position: absolute;
-            top: -50%;
-            right: -10%;
-            width: 400px;
-            height: 400px;
-            background: rgba(255,255,255,0.1);
+            top: -40%;
+            right: -8%;
+            width: 360px;
+            height: 360px;
+            background: radial-gradient(circle, rgba(200,134,42,.15) 0%, transparent 70%);
             border-radius: 50%;
-            filter: blur(60px);
+            pointer-events: none;
         }
 
+        .profile-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: 10%;
+            width: 260px;
+            height: 260px;
+            background: radial-gradient(circle, rgba(224,160,64,.08) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* ── Avatar ── */
         .hero-img-wrapper {
             position: relative;
             flex-shrink: 0;
-            width: 180px;
-            height: 180px;
+            width: 160px;
+            height: 160px;
             border-radius: 50%;
-            padding: 6px;
-            background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.3);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            padding: 5px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            box-shadow: 0 8px 32px rgba(200,134,42,.35), 0 0 0 4px rgba(200,134,42,.1);
+            z-index: 1;
+            animation: avatarFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes avatarFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
         }
 
         .hero-img {
@@ -70,133 +84,392 @@
             height: 100%;
             border-radius: 50%;
             object-fit: cover;
-            background: #222;
+            background: var(--bg-secondary);
+            border: 3px solid var(--bg-card);
+        }
+
+        /* ── Hero Content ── */
+        .hero-content {
+            z-index: 1;
         }
 
         .hero-content h1 {
-            font-size: 2.5rem;
-            margin-bottom: 8px;
+            font-size: 2.2rem;
+            margin-bottom: 6px;
             letter-spacing: -0.5px;
+            color: var(--text-primary);
+            font-family: 'Playfair Display', Georgia, serif;
         }
 
-        .hero-content p {
-            font-size: 1.1rem;
+        .hero-content .hero-vid {
+            font-size: 0.95rem;
+            color: var(--accent-light);
+            font-family: 'Inter', monospace;
+            font-weight: 600;
+            letter-spacing: 1px;
             opacity: 0.9;
-            font-family: 'JetBrains Mono', monospace;
         }
 
         .status-badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 6px 16px;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.2);
+            padding: 7px 18px;
             border-radius: 30px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-top: 15px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            margin-top: 16px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
         }
 
+        .status-badge.verified {
+            background: rgba(74,144,96,.15);
+            border: 1px solid rgba(93,200,136,.3);
+            color: #5DC888;
+            box-shadow: 0 0 12px rgba(93,200,136,.1);
+        }
+
+        .status-badge.unverified {
+            background: rgba(192,64,42,.15);
+            border: 1px solid rgba(255,107,90,.3);
+            color: #FF6B5A;
+            box-shadow: 0 0 12px rgba(255,107,90,.1);
+        }
+
+        /* ── Quick Stats Row ── */
+        .profile-quick-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .quick-stat {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.35s cubic-bezier(0.16,1,0.3,1);
+            animation: fadeInUp 0.5s both;
+        }
+
+        .quick-stat:nth-child(1) { animation-delay: 0.1s; }
+        .quick-stat:nth-child(2) { animation-delay: 0.18s; }
+        .quick-stat:nth-child(3) { animation-delay: 0.26s; }
+
+        .quick-stat:hover {
+            border-color: var(--accent);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0,0,0,.3), 0 0 16px var(--accent-glow);
+        }
+
+        .quick-stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .quick-stat-icon.gold { background: rgba(200,134,42,.12); }
+        .quick-stat-icon.green { background: rgba(74,144,96,.12); }
+        .quick-stat-icon.blue { background: rgba(74,128,168,.12); }
+
+        .quick-stat-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+        }
+
+        .quick-stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-top: 2px;
+        }
+
+        /* ── Grid Layout ── */
         .profile-grid {
             display: grid;
             grid-template-columns: 1fr 1.5fr;
-            gap: 30px;
+            gap: 24px;
         }
 
+        /* ── Glass Card ── */
         .glass-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: var(--bg-card);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.35s cubic-bezier(0.16,1,0.3,1);
+            animation: fadeInUp 0.5s 0.15s both;
         }
 
+        .glass-card:nth-child(2) { animation-delay: 0.25s; }
+
+        .glass-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: 0 16px 48px rgba(0,0,0,.35), 0 0 20px var(--accent-glow);
+        }
+
+        /* ── Section Title ── */
         .section-title {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 700;
-            margin-bottom: 25px;
+            margin-bottom: 24px;
             display: flex;
             align-items: center;
             gap: 12px;
-            color: var(--text);
+            color: var(--text-primary);
+            font-family: 'Playfair Display', Georgia, serif;
         }
 
+        .section-title .icon-wrap {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(200,134,42,.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        /* ── Detail Items ── */
         .detail-item {
-            margin-bottom: 20px;
-            padding-bottom: 15px;
+            margin-bottom: 0;
+            padding: 16px 0;
             border-bottom: 1px solid var(--border);
+            transition: all 0.2s;
         }
 
         .detail-item:last-child {
             border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .detail-item:first-child {
+            padding-top: 0;
+        }
+
+        .detail-item:hover {
+            padding-left: 6px;
         }
 
         .detail-label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             display: block;
+            font-weight: 600;
         }
 
         .detail-value {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 600;
-            color: var(--text);
+            color: var(--text-primary);
         }
 
+        .detail-value.accent {
+            color: var(--accent-light);
+        }
+
+        /* ── Voting History ── */
         .history-list {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
         }
 
         .history-item {
-            background: rgba(255,255,255,0.02);
+            background: var(--bg-secondary);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
+            border-radius: var(--radius-md);
+            padding: 18px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .history-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--gradient-1);
+            border-radius: 0 3px 3px 0;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
         .history-item:hover {
-            transform: translateX(10px);
-            background: rgba(255,255,255,0.05);
+            transform: translateX(6px);
             border-color: var(--accent);
+            background: var(--bg-glass-hover);
+            box-shadow: 0 4px 16px rgba(0,0,0,.2);
+        }
+
+        .history-item:hover::before {
+            opacity: 1;
         }
 
         .election-info h4 {
-            font-size: 1.1rem;
-            margin-bottom: 4px;
+            font-size: 1rem;
+            margin-bottom: 3px;
+            color: var(--text-primary);
+            font-weight: 600;
         }
 
         .election-info p {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
         }
 
         .vote-confirmed {
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
+            background: rgba(74,144,96,.12);
+            color: #5DC888;
             padding: 6px 14px;
             border-radius: 10px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 700;
             display: flex;
             align-items: center;
             gap: 6px;
+            border: 1px solid rgba(93,200,136,.2);
+            letter-spacing: 0.5px;
+            white-space: nowrap;
         }
 
+        /* ── Empty State ── */
+        .empty-vote-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .empty-vote-state .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 14px;
+            opacity: 0.5;
+            display: inline-block;
+            animation: avatarFloat 3s ease-in-out infinite;
+        }
+
+        .empty-vote-state h4 {
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            font-size: 1rem;
+        }
+
+        .empty-vote-state p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }
+
+        /* ── Security Card ── */
+        .security-card {
+            margin-top: 24px;
+            animation: fadeInUp 0.5s 0.35s both;
+        }
+
+        .security-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .security-item:last-child { border-bottom: none; }
+
+        .security-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .security-icon.active {
+            background: rgba(74,144,96,.12);
+            color: #5DC888;
+        }
+
+        .security-icon.inactive {
+            background: rgba(200,134,42,.1);
+            color: var(--accent-light);
+        }
+
+        .security-label {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .security-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .security-status {
+            margin-left: auto;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .security-status.on {
+            background: rgba(74,144,96,.12);
+            color: #5DC888;
+        }
+
+        .security-status.off {
+            background: rgba(200,134,42,.1);
+            color: var(--accent-light);
+        }
+
+        /* ── Responsive ── */
         @media (max-width: 850px) {
             .profile-grid { grid-template-columns: 1fr; }
-            .profile-hero { flex-direction: column; text-align: center; padding: 40px 20px; }
-            .hero-img-wrapper { width: 140px; height: 140px; }
+            .profile-hero {
+                flex-direction: column;
+                text-align: center;
+                padding: 36px 24px;
+            }
+            .hero-img-wrapper { width: 130px; height: 130px; }
+            .hero-content h1 { font-size: 1.75rem; }
+            .profile-quick-stats { flex-direction: column; }
+        }
+
+        @media (max-width: 480px) {
+            .profile-container { padding: 16px 12px 40px; }
+            .profile-hero { padding: 28px 16px; gap: 20px; }
+            .glass-card { padding: 20px; }
         }
     </style>
 </head>
@@ -225,7 +498,7 @@
             </div>
             <div class="hero-content">
                 <h1 id="profile-name">Voter Profile</h1>
-                <p id="profile-voter-id">VID-XXXXXXXXXX</p>
+                <p class="hero-vid" id="profile-voter-id">VID-XXXXXXXXXX</p>
                 <div id="verify-badge">
                     <div class="status-badge">
                         <span>⏳ Checking Status...</span>
@@ -234,36 +507,105 @@
             </div>
         </div>
 
+        <!-- Quick Stats -->
+        <div class="profile-quick-stats">
+            <div class="quick-stat">
+                <div class="quick-stat-icon gold">🗳️</div>
+                <div>
+                    <div class="quick-stat-label">Elections Voted</div>
+                    <div class="quick-stat-value" id="stat-voted">—</div>
+                </div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-icon green">✅</div>
+                <div>
+                    <div class="quick-stat-label">Account Status</div>
+                    <div class="quick-stat-value" id="stat-status" style="font-size:1rem; color: var(--text-secondary);">Loading...</div>
+                </div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-icon blue">📅</div>
+                <div>
+                    <div class="quick-stat-label">Member Since</div>
+                    <div class="quick-stat-value" id="stat-joined" style="font-size:1rem; color: var(--text-secondary);">—</div>
+                </div>
+            </div>
+        </div>
+
         <div class="profile-grid">
             <!-- Left: Personal Details -->
-            <div class="glass-card">
-                <h3 class="section-title"><span>👤</span> Personal Details</h3>
-                
-                <div class="detail-item">
-                    <span class="detail-label">Email Address</span>
-                    <span class="detail-value" id="profile-email">—</span>
+            <div>
+                <div class="glass-card">
+                    <h3 class="section-title">
+                        <span class="icon-wrap">👤</span>
+                        Personal Details
+                    </h3>
+
+                    <div class="detail-item">
+                        <span class="detail-label">Email Address</span>
+                        <span class="detail-value" id="profile-email">—</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Phone Number</span>
+                        <span class="detail-value" id="profile-phone">—</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Village</span>
+                        <span class="detail-value" id="profile-village">—</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">District</span>
+                        <span class="detail-value" id="profile-district">—</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">State / Region</span>
+                        <span class="detail-value" id="profile-state">—</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Account Role</span>
+                        <span class="detail-value accent" id="profile-role">—</span>
+                    </div>
                 </div>
-                <div class="detail-item">
-                    <span class="detail-label">Phone Number</span>
-                    <span class="detail-value" id="profile-phone">—</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">State / Region</span>
-                    <span class="detail-value" id="profile-state">—</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Account Role</span>
-                    <span class="detail-value" id="profile-role">—</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Member Since</span>
-                    <span class="detail-value" id="profile-joined">—</span>
+
+                <!-- Security Card -->
+                <div class="glass-card security-card">
+                    <h3 class="section-title">
+                        <span class="icon-wrap">🔒</span>
+                        Security
+                    </h3>
+                    <div class="security-item">
+                        <div class="security-icon" id="sec-verify-icon">🛡️</div>
+                        <div>
+                            <div class="security-label">Email Verification</div>
+                            <div class="security-sub">Identity confirmed via OTP</div>
+                        </div>
+                        <span class="security-status" id="sec-verify-status">—</span>
+                    </div>
+                    <div class="security-item">
+                        <div class="security-icon" id="sec-face-icon">📷</div>
+                        <div>
+                            <div class="security-label">Face ID</div>
+                            <div class="security-sub">Biometric authentication</div>
+                        </div>
+                        <span class="security-status" id="sec-face-status">—</span>
+                    </div>
+                    <div class="security-item">
+                        <div class="security-icon active">🔑</div>
+                        <div>
+                            <div class="security-label">Password</div>
+                            <div class="security-sub">Account access credential</div>
+                        </div>
+                        <span class="security-status on">Set</span>
+                    </div>
                 </div>
             </div>
 
             <!-- Right: Voting History -->
             <div class="glass-card">
-                <h3 class="section-title"><span>📜</span> Voting History</h3>
+                <h3 class="section-title">
+                    <span class="icon-wrap">📜</span>
+                    Voting History
+                </h3>
                 <div class="history-list" id="voted-elections-list">
                     <div class="spinner"></div>
                 </div>
@@ -278,7 +620,7 @@
         async function loadProfile() {
             try {
                 const profile = await getProfile();
-                
+
                 document.getElementById('profile-name').textContent = `${profile.first_name} ${profile.last_name}`;
                 document.getElementById('profile-voter-id').textContent = profile.voter_id || 'ID NOT ASSIGNED';
                 document.getElementById('user-display').textContent = profile.first_name;
@@ -287,34 +629,71 @@
                     document.getElementById('profile-img').src = profile.profile_picture;
                 }
 
+                // Verification badge
                 const badge = document.getElementById('verify-badge');
                 if (profile.is_verified) {
-                    badge.innerHTML = '<div class="status-badge"><span>✅ VERIFIED VOTER</span></div>';
+                    badge.innerHTML = '<div class="status-badge verified"><span>✅ VERIFIED VOTER</span></div>';
                 } else {
-                    badge.innerHTML = '<div class="status-badge" style="background:rgba(239,68,68,0.2); border-color:rgba(239,68,68,0.3)"><span>❌ UNVERIFIED</span></div>';
+                    badge.innerHTML = '<div class="status-badge unverified"><span>❌ UNVERIFIED</span></div>';
                 }
 
+                // Quick stats
+                document.getElementById('stat-status').textContent = profile.is_verified ? 'Verified' : 'Pending';
+                document.getElementById('stat-status').style.color = profile.is_verified ? '#5DC888' : '#FF6B5A';
+                document.getElementById('stat-joined').textContent = new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+                // Personal details
                 document.getElementById('profile-email').textContent = profile.email;
                 document.getElementById('profile-phone').textContent = profile.phone || 'Not provided';
+                document.getElementById('profile-village').textContent = profile.village || '—';
+                document.getElementById('profile-district').textContent = profile.district || '—';
                 document.getElementById('profile-state').textContent = profile.state || 'National';
                 document.getElementById('profile-role').textContent = profile.role.toUpperCase();
-                document.getElementById('profile-joined').textContent = new Date(profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+                // Security section
+                const verifyIcon = document.getElementById('sec-verify-icon');
+                const verifyStatus = document.getElementById('sec-verify-status');
+                if (profile.is_verified) {
+                    verifyIcon.className = 'security-icon active';
+                    verifyStatus.className = 'security-status on';
+                    verifyStatus.textContent = 'Verified';
+                } else {
+                    verifyIcon.className = 'security-icon inactive';
+                    verifyStatus.className = 'security-status off';
+                    verifyStatus.textContent = 'Pending';
+                }
+
+                const faceIcon = document.getElementById('sec-face-icon');
+                const faceStatus = document.getElementById('sec-face-status');
+                if (profile.has_face_registered) {
+                    faceIcon.className = 'security-icon active';
+                    faceStatus.className = 'security-status on';
+                    faceStatus.textContent = 'Active';
+                } else {
+                    faceIcon.className = 'security-icon inactive';
+                    faceStatus.className = 'security-status off';
+                    faceStatus.textContent = 'Not Set';
+                }
+
+                // Voting History
                 const list = document.getElementById('voted-elections-list');
                 if (!profile.voted_elections || profile.voted_elections.length === 0) {
+                    document.getElementById('stat-voted').textContent = '0';
                     list.innerHTML = `
-                        <div style="text-align:center; padding:40px; opacity:0.6">
-                            <div style="font-size:3rem; margin-bottom:15px">🗳️</div>
+                        <div class="empty-vote-state">
+                            <div class="empty-icon">🗳️</div>
+                            <h4>No Votes Cast Yet</h4>
                             <p>You haven't participated in any elections yet.</p>
-                            <a href="/elections/" class="btn btn-sm btn-primary mt-2">View Elections</a>
+                            <a href="/elections/" class="btn btn-sm btn-primary">View Elections →</a>
                         </div>
                     `;
                 } else {
-                    list.innerHTML = profile.voted_elections.map(e => `
-                        <div class="history-item">
+                    document.getElementById('stat-voted').textContent = profile.voted_elections.length;
+                    list.innerHTML = profile.voted_elections.map((e, i) => `
+                        <div class="history-item" style="animation: fadeInUp 0.4s ${0.1 + i * 0.08}s both">
                             <div class="election-info">
                                 <h4>${e.title}</h4>
-                                <p>Casted on: ${formatDate(e.date_voted)}</p>
+                                <p>Voted on: ${formatDate(e.date_voted)}</p>
                             </div>
                             <div class="vote-confirmed">
                                 <span>✔</span> RECORDED

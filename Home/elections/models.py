@@ -36,9 +36,16 @@ class Election(models.Model):
     district = models.CharField(max_length=100, blank=True)
     village = models.CharField(max_length=100, blank=True)
 
+    APPROVAL_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    )
+
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='upcoming')
+    approval_status = models.CharField(max_length=20, choices=APPROVAL_CHOICES, default='pending')
 
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -66,8 +73,8 @@ class Candidate(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=150)
     election = models.ForeignKey(Election, on_delete=models.CASCADE, related_name='candidates')
-    party = models.ForeignKey(Party, on_delete=models.SET_NULL, null=True, blank=True)
-    symbol = models.ImageField(upload_to='candidates/symbols/', null=True, blank=True)
+    party = models.CharField(max_length=150, blank=True, null=True)
+    symbol = models.CharField(max_length=50, blank=True, null=True)
     photo = models.ImageField(upload_to='candidates/', null=True, blank=True)
     party_photo = models.ImageField(upload_to='candidates/party_photos/', null=True, blank=True)
     party_brochure = models.FileField(upload_to='candidates/brochures/', null=True, blank=True)

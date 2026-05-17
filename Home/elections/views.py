@@ -33,7 +33,7 @@ class ElectionViewSet(viewsets.ModelViewSet):
             q_national = Q(level='national')
             q_state = Q(level='state', state__iexact=user.state)
             q_village = Q(level='village', state__iexact=user.state, district__iexact=user.district, village__iexact=user.village)
-            qs = qs.filter(q_national | q_state | q_village)
+            qs = qs.filter(q_national | q_state | q_village).filter(approval_status='approved')
 
         # Filter by query params
         level = self.request.query_params.get('level')
@@ -53,21 +53,44 @@ class ElectionViewSet(viewsets.ModelViewSet):
         user = self.request.user
         level = serializer.validated_data.get('level')
         village = serializer.validated_data.get('village')
+        state = serializer.validated_data.get('state')
+        district = serializer.validated_data.get('district')
         
-        # Enforce 24-hour overwrite rule for village elections
+        from rest_framework.exceptions import ValidationError
+        
+        # Enforce rule: Only one active/upcoming election permitted
+        existing = Election.objects.filter(level=level, status__in=['active', 'upcoming'])
+        
         if level == 'village' and village:
-            from datetime import timedelta
-            time_limit = timezone.now() - timedelta(hours=24)
-            recent_election = Election.objects.filter(
-                level='village',
-                village=village,
-                created_at__gte=time_limit
-            ).first()
+            existing = existing.filter(village=village, district=district, state=state)
+        elif level == 'state' and state:
+            existing = existing.filter(state=state)
             
-            if recent_election:
-                recent_election.delete()
+        if existing.exists():
+            raise ValidationError({'detail': 'An active or upcoming election already exists. More than one election is not permitted.'})
 
-        serializer.save(created_by=self.request.user)
+        # Set approval status based on who creates it. State Admins (officers) don't need approval.
+        approval_status = 'approved' if self.request.user.role == 'officer' else 'pending'
+        serializer.save(created_by=self.request.user, approval_status=approval_status)
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        if request.user.role != 'officer':
+            return Response({'detail': 'Only State Administrative can approve elections.'}, status=status.HTTP_403_FORBIDDEN)
+        election = self.get_object()
+        election.approval_status = 'approved'
+        election.save()
+        return Response({'status': 'approved'})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        if request.user.role != 'officer':
+            return Response({'detail': 'Only State Administrative can reject elections.'}, status=status.HTTP_403_FORBIDDEN)
+        election = self.get_object()
+        election.approval_status = 'rejected'
+        election.status = 'cancelled'
+        election.save()
+        return Response({'status': 'rejected'})
 
     @action(detail=False, methods=['get'])
     def active(self, request):
@@ -85,7 +108,7 @@ class ElectionViewSet(viewsets.ModelViewSet):
         user = request.user
         now = timezone.now()
         elections = Election.objects.filter(
-            start_time__lte=now, end_time__gte=now, status='active'
+            start_time__lte=now, end_time__gte=now, status='active', approval_status='approved'
         )
         # Helper for strict alignment
         def normalize(loc):

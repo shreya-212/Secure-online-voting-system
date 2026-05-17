@@ -20,7 +20,16 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = ['*']
+
+CORS_ALLOW_ALL_ORIGINS = True
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.ngrok-free.app',
+    'https://*.ngrok-free.dev',
+    'https://*.ngrok.io',
+    'https://*.ngrok.app',
+    'https://*.loca.lt',
+]
 
 # ---------- Application definition ----------
 

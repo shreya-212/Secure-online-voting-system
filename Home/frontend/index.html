@@ -16,19 +16,20 @@
     display: flex; align-items: center; gap: 10px; margin-bottom: 24px;
 }
 .prog-back {
-    background: none; border: none; color: var(--text-muted, #a38d82);
-    font-size: 1.1rem; cursor: pointer; padding: 4px 8px; border-radius: 6px;
-    transition: all .2s;
+    background: rgba(200,134,42,.08); border: 1px solid rgba(200,134,42,.15); color: var(--accent-light, #E0A040);
+    font-size: 1.1rem; cursor: pointer; padding: 6px 10px; border-radius: 8px;
+    transition: all .25s ease;
 }
-.prog-back:hover { background: rgba(74,46,36,.08); color: var(--text-primary, #4a2e24); }
-.prog-bar-wrap { flex:1; height:3px; background: rgba(74,46,36,.1); border-radius:2px; overflow:hidden; }
+.prog-back:hover { background: rgba(200,134,42,.18); color: #fff; transform: translateX(-2px); }
+.prog-bar-wrap { flex:1; height:5px; background: rgba(200,134,42,.12); border-radius:3px; overflow:hidden; }
 .prog-bar-fill {
     height:100%;
-    background: linear-gradient(90deg, #c14336, #d6594d);
-    border-radius:2px;
+    background: linear-gradient(90deg, #C8862A, #E0A040, #F0C060);
+    border-radius:3px;
     transition: width .5s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 0 8px rgba(224,160,64,.4);
 }
-.prog-label { font-size:.72rem; color:var(--text-muted, #a38d82); white-space:nowrap; font-weight:600; }
+.prog-label { font-size:.72rem; color: var(--accent-light, #E0A040); white-space:nowrap; font-weight:700; letter-spacing: 0.5px; }
 
 /* ── Question viewport ── */
 .q-viewport { position:relative; min-height:300px; }
@@ -41,59 +42,86 @@
 .q-slide.exiting { opacity:0; transform:translateX(-60px); pointer-events:none; }
 
 /* ── Question UI ── */
-.q-icon { font-size:2rem; margin-bottom:8px; }
-.q-title { font-size:1.2rem; font-weight:700; color: var(--text-primary, #4a2e24); margin-bottom:5px; line-height:1.4; }
-.q-hint  { font-size:.78rem; color: var(--text-secondary, #7a5a4a); margin-bottom:18px; line-height:1.5; }
+.q-icon {
+    font-size:2.2rem; margin-bottom:10px;
+    display:inline-block;
+    animation: floatIcon 2.5s ease-in-out infinite;
+}
+@keyframes floatIcon { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+.q-title { font-size:1.25rem; font-weight:700; color: var(--text-primary, #F5EEE4); margin-bottom:5px; line-height:1.4; }
+.q-hint  { font-size:.78rem; color: var(--text-secondary, #C4AE96); margin-bottom:18px; line-height:1.5; }
+
+/* ══ FIXED: Dark text on light inputs so typed text is VISIBLE ══ */
 .q-input {
     width:100%; box-sizing:border-box;
-    background: #ffffff; border:1.5px solid #cccccc;
-    border-radius:12px; padding:14px 18px; font-size:1rem; color: var(--text-primary, #4a2e24);
-    outline:none; transition: border-color .2s, box-shadow .2s;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    background: var(--bg-secondary, #251A13);
+    border:1.5px solid var(--border, #3D2E22);
+    border-radius:12px; padding:14px 18px; font-size:1rem;
+    color: var(--text-primary, #F5EEE4);
+    outline:none;
+    transition: border-color .25s, box-shadow .25s, background .25s;
+    font-family: 'Inter', sans-serif;
 }
-.q-input:focus { border-color: var(--accent, #c14336); box-shadow:0 0 0 3px rgba(193,67,54,.18); }
-.q-input[readonly] { background: rgba(193,67,54,.04); border-color: rgba(193,67,54,.2); color: var(--text-muted, #a38d82); cursor:default; }
+.q-input::placeholder { color: var(--text-muted, #8A7060); }
+.q-input:focus {
+    border-color: var(--accent, #C8862A);
+    background: var(--bg-card, #2D2218);
+    box-shadow: 0 0 0 3px rgba(200,134,42,.25), 0 4px 16px rgba(200,134,42,.1);
+}
+.q-input[readonly] {
+    background: rgba(200,134,42,.06); border-color: rgba(200,134,42,.2);
+    color: var(--text-muted, #8A7060); cursor:default;
+}
 .q-input.otp  { text-align:center; font-size:2rem; letter-spacing:18px; font-weight:700; }
 .q-input.pass { font-size:1.2rem; letter-spacing:4px; }
 .q-input.upper { text-transform:uppercase; letter-spacing:2px; }
 .q-msg { margin-top:8px; min-height:18px; font-size:.78rem; }
-.q-msg.ok  { color: var(--success, #5e7a4b); }
-.q-msg.err { color: var(--danger, #b03a2e); }
-.q-msg.inf { color: var(--info, #4b6a8a); }
+.q-msg.ok  { color: #5DC888; }
+.q-msg.err { color: #FF6B5A; }
+.q-msg.inf { color: #60A5E8; }
 
-/* ── Next button ── */
-.q-footer { display:flex; align-items:center; gap:10px; margin-top:20px; }
+/* ── Next button — Premium gold gradient ── */
+.q-footer { display:flex; align-items:center; gap:10px; margin-top:22px; }
 .q-btn {
-    background: var(--gradient-1, linear-gradient(to bottom, #d14d3f 0%, #b1382b 100%));
-    color:#fff; border:1px solid #8c2a1f; border-radius:10px;
-    padding:12px 28px; font-size:.95rem; font-weight:600; cursor:pointer;
+    background: linear-gradient(135deg, #C8862A 0%, #E0A040 50%, #C8862A 100%);
+    background-size: 200% 200%;
+    color:#fff; border:1px solid rgba(224,160,64,.3); border-radius:12px;
+    padding:13px 30px; font-size:.95rem; font-weight:700; cursor:pointer;
     display:flex; align-items:center; gap:8px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.2);
-    text-shadow: 0 -1px 0 rgba(0,0,0,0.3);
-    transition: transform .15s, box-shadow .15s, opacity .2s;
+    box-shadow: 0 4px 16px rgba(200,134,42,.35);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    transition: transform .2s, box-shadow .2s, background-position .4s;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.3px;
 }
-.q-btn:hover:not(:disabled) { transform:translateY(-1px); box-shadow: inset 0 1px 3px rgba(0,0,0,0.2), 0 4px 8px rgba(193,67,54,.4); }
+.q-btn:hover:not(:disabled) {
+    transform:translateY(-2px);
+    box-shadow: 0 6px 24px rgba(200,134,42,.5);
+    background-position: 100% 0;
+}
 .q-btn:active { transform:scale(.97); }
-.q-btn:disabled { opacity:.5; cursor:not-allowed; }
-.q-enter-hint { font-size:.7rem; color: var(--text-muted, #a38d82); }
+.q-btn:disabled { opacity:.45; cursor:not-allowed; }
+.q-enter-hint { font-size:.7rem; color: var(--text-muted, #8A7060); }
 .q-enter-hint kbd {
-    background: rgba(74,46,36,.06); border:1px solid rgba(74,46,36,.15);
-    border-radius:4px; padding:1px 5px; font-size:.65rem; color: var(--text-secondary, #7a5a4a);
+    background: rgba(200,134,42,.08); border:1px solid rgba(200,134,42,.2);
+    border-radius:4px; padding:1px 5px; font-size:.65rem; color: var(--accent-light, #E0A040);
 }
 
-/* ── Verified strip ── */
+/* ── Verified strip — glowing green ── */
 .verified-strip {
     display:flex; align-items:center; gap:10px;
-    background: var(--success-bg, rgba(94,122,75,.15)); border:1px solid rgba(94,122,75,.3);
-    border-radius:10px; padding:10px 14px; margin-bottom:14px;
-    font-size:.8rem; color: var(--success, #5e7a4b); font-weight:600;
+    background: linear-gradient(135deg, rgba(74,144,96,.12), rgba(93,200,136,.08));
+    border:1px solid rgba(93,200,136,.3);
+    border-radius:12px; padding:12px 16px; margin-bottom:14px;
+    font-size:.82rem; color: #5DC888; font-weight:600;
+    box-shadow: 0 0 12px rgba(93,200,136,.1);
 }
 
 /* ── Success screen ── */
 .success-screen { text-align:center; padding:20px 0; }
 .success-screen .big-icon { font-size:4rem; animation:popIn .5s cubic-bezier(.175,.885,.32,1.275); }
-.success-screen h2 { font-size:1.3rem; margin:12px 0 8px; color: var(--text-primary, #4a2e24); }
-.success-screen p  { font-size:.85rem; color: var(--text-secondary, #7a5a4a); }
+.success-screen h2 { font-size:1.3rem; margin:12px 0 8px; color: var(--text-primary, #F5EEE4); }
+.success-screen p  { font-size:.85rem; color: var(--text-secondary, #C4AE96); }
 
 /* ── Spinner ── */
 .spin { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spinR .7s linear infinite; vertical-align:middle; margin-right:5px; }
@@ -108,11 +136,12 @@
 .modal-overlay.hidden { display: none !important; }
 
 .modal-content {
-    background: #fff !important; padding: 30px !important; border-radius: 12px !important; width: 90% !important; max-width: 400px !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important; color: #333 !important;
+    background: var(--bg-card, #2D2218) !important; padding: 30px !important; border-radius: 16px !important; width: 90% !important; max-width: 400px !important;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important; color: var(--text-primary, #F5EEE4) !important;
+    border: 1px solid var(--border, #3D2E22) !important;
 }
 .modal-header { display: flex !important; justify-content: space-between !important; align-items: center !important; margin-bottom: 20px !important; }
-.close-btn { background: none !important; border: none !important; font-size: 2rem !important; cursor: pointer !important; color: #999 !important; }
+.close-btn { background: none !important; border: none !important; font-size: 2rem !important; cursor: pointer !important; color: var(--text-muted, #8A7060) !important; }
 
 </style>
 <script>
@@ -721,32 +750,285 @@ VoiceEngine.init({
 
     <!-- ══ FORGOT PASSWORD MODAL ══ -->
     <div id="forgot-modal" class="modal-overlay hidden" style="z-index:9999">
-        <div class="modal-content" style="max-width:400px; background: #fffcf5; border: 2px solid #e6d5c3; color: #4a2e24;">
-            <div class="modal-header" style="border-bottom: 1px solid #e6d5c3;">
-                <h2 style="color: #4a2e24; margin: 0;">Reset Password</h2>
-                <button class="close-btn" onclick="closeForgotModal()" style="color: #a38d82;">×</button>
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                <h2 style="color: var(--text-primary); margin: 0;">Reset Password</h2>
+                <button class="close-btn" onclick="closeForgotModal()">×</button>
             </div>
             <div id="forgot-step-1">
-                <p style="color: #7a5a4a; margin-bottom: 15px;">Enter your email to receive a reset OTP.</p>
+                <p style="color: var(--text-secondary); margin-bottom: 15px;">Enter your email to receive a reset OTP.</p>
                 <div class="form-group">
-                    <input type="email" class="form-input" id="f-email" placeholder="you@example.com" style="background:white; border:1px solid #cccccc; color:#4a2e24;">
+                    <input type="email" class="form-input" id="f-email" placeholder="you@example.com">
                 </div>
                 <button class="btn btn-primary" style="width:100%; margin-top: 15px;" onclick="handleForgotRequest()" id="forgot-req-btn">Send OTP →</button>
             </div>
             <div id="forgot-step-2" class="hidden">
-                <p style="color: #7a5a4a; margin-bottom: 15px;">Enter the OTP sent to your email and your new password.</p>
+                <p style="color: var(--text-secondary); margin-bottom: 15px;">Enter the OTP sent to your email and your new password.</p>
                 <div class="form-group">
-                    <label class="form-label" style="color: #4a2e24;">OTP</label>
-                    <input type="text" class="form-input" id="f-otp" placeholder="6-digit code" style="background:white; border:1px solid #cccccc; color:#4a2e24;">
+                    <label class="form-label">OTP</label>
+                    <input type="text" class="form-input" id="f-otp" placeholder="6-digit code">
                 </div>
                 <div class="form-group" style="margin-top: 15px;">
-                    <label class="form-label" style="color: #4a2e24;">New Password</label>
-                    <input type="password" class="form-input" id="f-pass" placeholder="Min 8 characters" style="background:white; border:1px solid #cccccc; color:#4a2e24;">
+                    <label class="form-label">New Password</label>
+                    <input type="password" class="form-input" id="f-pass" placeholder="Min 8 characters">
                 </div>
                 <button class="btn btn-primary" style="width:100%; margin-top: 15px;" onclick="handleForgotConfirm()" id="forgot-conf-btn">Reset Password</button>
             </div>
             <div id="forgot-msg" style="margin-top: 15px; text-align: center; font-size: 0.85rem;"></div>
         </div>
     </div>
+</div>
+
+<!-- ══ VOTER REGISTRATION CHATBOT ══ -->
+<style>
+#chatbot-fab{position:fixed;bottom:28px;left:28px;z-index:9000;background:linear-gradient(135deg,#c14336,#8b2319);color:#fff;width:60px;height:60px;border-radius:50%;border:none;font-size:1.6rem;cursor:pointer;box-shadow:0 4px 20px rgba(193,67,54,.5);display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s}
+#chatbot-fab:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(193,67,54,.7)}
+#chatbot-fab .notif-dot{position:absolute;top:5px;right:5px;width:12px;height:12px;background:#22c55e;border-radius:50%;border:2px solid #fff;animation:pulse-dot 1.5s infinite}
+@keyframes pulse-dot{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+#chatbot-window{position:fixed;bottom:100px;left:28px;z-index:9000;width:360px;max-height:560px;background:#fffcf5;border:1.5px solid #e6d5c3;border-radius:20px;box-shadow:0 12px 40px rgba(74,46,36,.25);display:none;flex-direction:column;overflow:hidden;font-family:'Segoe UI',sans-serif}
+#chatbot-window.open{display:flex;animation:slideUp .3s cubic-bezier(.4,0,.2,1)}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.cbot-header{background:linear-gradient(135deg,#c14336,#8b2319);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.cbot-avatar{width:40px;height:40px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+.cbot-header-info h4{margin:0;font-size:.95rem;font-weight:700}.cbot-header-info p{margin:0;font-size:.72rem;opacity:.85}
+.cbot-close{margin-left:auto;background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;opacity:.8;transition:opacity .2s}.cbot-close:hover{opacity:1}
+.cbot-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;max-height:360px}
+.cbot-msg{max-width:85%;padding:10px 14px;border-radius:16px;font-size:.85rem;line-height:1.5;animation:fadeMsg .3s ease}
+@keyframes fadeMsg{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.cbot-msg.bot{background:#f0e8de;color:#4a2e24;border-bottom-left-radius:4px;align-self:flex-start}
+.cbot-msg.user{background:linear-gradient(135deg,#c14336,#9b2d20);color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+.cbot-msg.system{background:rgba(16,185,129,.12);color:#065f46;border:1px solid rgba(16,185,129,.3);border-radius:10px;align-self:center;font-size:.78rem;text-align:center;max-width:95%}
+.cbot-typing{display:flex;gap:5px;align-items:center;padding:8px 12px;background:#f0e8de;border-radius:14px;border-bottom-left-radius:4px;align-self:flex-start;width:fit-content}
+.cbot-typing span{width:7px;height:7px;background:#a38d82;border-radius:50%;animation:bounce-dot .9s infinite}.cbot-typing span:nth-child(2){animation-delay:.2s}.cbot-typing span:nth-child(3){animation-delay:.4s}
+@keyframes bounce-dot{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.cbot-footer{padding:10px 12px;border-top:1px solid #e6d5c3;flex-shrink:0;display:flex;gap:8px;align-items:center}
+.cbot-input{flex:1;border:1.5px solid #ddd;border-radius:10px;padding:9px 13px;font-size:.88rem;outline:none;color:#4a2e24;background:#fff;transition:border-color .2s}
+.cbot-input:focus{border-color:#c14336;box-shadow:0 0 0 3px rgba(193,67,54,.12)}
+.cbot-send{background:linear-gradient(135deg,#c14336,#8b2319);color:#fff;border:none;border-radius:10px;padding:9px 14px;cursor:pointer;font-size:1rem;transition:transform .15s}
+.cbot-send:hover{transform:scale(1.08)}.cbot-send:disabled{opacity:.5;cursor:default}
+.ai-score-card{background:linear-gradient(135deg,rgba(193,67,54,.08),rgba(139,35,25,.05));border:1px solid rgba(193,67,54,.2);border-radius:12px;padding:12px;margin-top:4px}
+.ai-score-bar{height:8px;border-radius:4px;background:#e6d5c3;overflow:hidden;margin:6px 0}
+.ai-score-fill{height:100%;border-radius:4px;transition:width .8s ease}
+.ai-score-fill.green{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.ai-score-fill.yellow{background:linear-gradient(90deg,#f59e0b,#d97706)}
+.ai-score-fill.red{background:linear-gradient(90deg,#ef4444,#b91c1c)}
+</style>
+
+<!-- FAB Button -->
+<button id="chatbot-fab" onclick="toggleChatbot()" title="Register as a Voter">
+    💬
+    <span class="notif-dot"></span>
+</button>
+
+<!-- Chatbot Window -->
+<div id="chatbot-window">
+    <div class="cbot-header">
+        <div class="cbot-avatar">🤖</div>
+        <div class="cbot-header-info">
+            <h4>SecureVote Assistant</h4>
+            <p>Voter Registration Help</p>
+        </div>
+        <button class="cbot-close" onclick="toggleChatbot()">×</button>
+    </div>
+    <div class="cbot-msgs" id="cbot-msgs"></div>
+    <div class="cbot-footer">
+        <input class="cbot-input" id="cbot-input" placeholder="Type your answer…" onkeydown="if(event.key==='Enter')cbotSend()">
+        <button class="cbot-send" id="cbot-send-btn" onclick="cbotSend()">➤</button>
+    </div>
+</div>
+
+<script>
+/* CHATBOT REGISTRATION FLOW */
+let cbotOpen = false, cbotStep = 0, cbotData = {};
+
+const CBOT_STEPS = [
+    { field: null,            prompt: "\u{1F44B} Hello! I can help you apply to register as a voter.\n\nWould you like to submit a registration request to the Village Admin? Type <b>yes</b> to begin." },
+    { field: "voter_id",      prompt: "\u{1F5F3}\uFE0F Please enter your <b>Voter ID</b> (e.g. ABC1234567):" },
+    { field: "aadhaar_last4", prompt: "\u{1FAAA} Enter the <b>last 4 digits</b> of your Aadhaar card (e.g. 5678):" },
+    { field: "full_name",     prompt: "\u{1F464} What is your <b>full name</b> (as on your ID card)?" },
+    { field: "date_of_birth", prompt: "\u{1F382} Your <b>date of birth</b>? (format: DD/MM/YYYY)" },
+    { field: "email",         prompt: "\u{1F4E7} Your <b>email address</b>?" },
+    { field: "phone",         prompt: "\u{1F4F1} Your <b>mobile number</b>? (or type skip)" },
+    { field: "village",       prompt: "\u{1F3D8}\uFE0F Your <b>village or city name</b>?" },
+    { field: "district",      prompt: "\u{1F5FA}\uFE0F Your <b>district</b>? (or type skip)" },
+    { field: "state",         prompt: "\u{1F3DB}\uFE0F Your <b>state</b>?" },
+    { field: null, action: "confirm" },
+];
+
+function toggleChatbot() {
+    cbotOpen = !cbotOpen;
+    const win = document.getElementById("chatbot-window");
+    const fab = document.getElementById("chatbot-fab");
+    win.classList.toggle("open", cbotOpen);
+    fab.innerHTML = cbotOpen ? "&#x2715;<span class=\"notif-dot\"></span>" : "\u{1F4AC}<span class=\"notif-dot\"></span>";
+    if (cbotOpen && document.getElementById("cbot-msgs").children.length === 0) {
+        setTimeout(() => cbotBotMsg(CBOT_STEPS[0].prompt, true), 300);
+    }
+}
+
+function cbotBotMsg(html, isFirst) {
+    const msgs = document.getElementById("cbot-msgs");
+    const typing = document.createElement("div");
+    typing.className = "cbot-typing";
+    typing.innerHTML = "<span></span><span></span><span></span>";
+    msgs.appendChild(typing);
+    msgs.scrollTop = msgs.scrollHeight;
+    setTimeout(function() {
+        typing.remove();
+        const div = document.createElement("div");
+        div.className = "cbot-msg bot";
+        div.innerHTML = (html || "").replace(/\n/g, "<br>");
+        msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
+        if (isFirst) document.getElementById("cbot-input").focus();
+    }, 700);
+}
+
+function cbotUserMsg(text) {
+    const msgs = document.getElementById("cbot-msgs");
+    const div = document.createElement("div");
+    div.className = "cbot-msg user";
+    div.textContent = text;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+}
+
+function cbotSystemMsg(html) {
+    const msgs = document.getElementById("cbot-msgs");
+    const div = document.createElement("div");
+    div.className = "cbot-msg system";
+    div.innerHTML = html;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+}
+
+document.getElementById("cbot-input").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") cbotSend();
+});
+
+async function cbotSend() {
+    const input = document.getElementById("cbot-input");
+    const btn   = document.getElementById("cbot-send-btn");
+    const val   = input.value.trim();
+    if (!val) return;
+
+    // Confirm step
+    if (cbotStep === 99) {
+        cbotUserMsg(val);
+        input.value = "";
+        if (val.toLowerCase().startsWith("y")) {
+            await cbotSubmit();
+        } else {
+            cbotStep = 0; cbotData = {};
+            cbotBotMsg("\u{1F504} Let us start over.<br>" + CBOT_STEPS[0].prompt);
+        }
+        return;
+    }
+
+    cbotUserMsg(val);
+    input.value = "";
+    btn.disabled = true;
+
+    // Step 0: initial yes/no
+    if (cbotStep === 0) {
+        if (val.toLowerCase().startsWith("y")) {
+            cbotStep = 1;
+            cbotBotMsg(CBOT_STEPS[1].prompt);
+        } else {
+            cbotBotMsg("No problem! Click the chatbot button anytime when ready to register. \u{1F60A}");
+        }
+        btn.disabled = false;
+        return;
+    }
+
+    const step  = CBOT_STEPS[cbotStep];
+    const field = step ? step.field : null;
+
+    // Validate
+    if (field === "voter_id" && !/^[A-Za-z]{2,4}[0-9]{5,8}$/i.test(val.trim())) {
+        cbotBotMsg("\u26A0\uFE0F Invalid Voter ID. Should be like <b>ABC1234567</b>. Try again:");
+        btn.disabled = false; return;
+    }
+    if (field === "aadhaar_last4" && !/^\d{4}$/.test(val.trim())) {
+        cbotBotMsg("\u26A0\uFE0F Please enter exactly <b>4 numeric digits</b>:");
+        btn.disabled = false; return;
+    }
+    if (field === "email" && !/\S+@\S+\.\S+/.test(val.trim())) {
+        cbotBotMsg("\u26A0\uFE0F Invalid email address. Try again:");
+        btn.disabled = false; return;
+    }
+
+    const skip = val.toLowerCase() === "skip";
+    if (field) cbotData[field] = skip ? "" : (field === "voter_id" ? val.trim().toUpperCase() : val.trim());
+    cbotStep++;
+
+    const next = CBOT_STEPS[cbotStep];
+    if (!next || next.action === "confirm") {
+        const summary =
+            "\u{1F4CB} <b>Please confirm your details:</b><br>" +
+            "Voter ID: <b>" + (cbotData.voter_id || "") + "</b><br>" +
+            "Aadhaar last 4: <b>****" + (cbotData.aadhaar_last4 || "") + "</b><br>" +
+            "Name: <b>" + (cbotData.full_name || "") + "</b><br>" +
+            "DOB: <b>" + (cbotData.date_of_birth || "\u2014") + "</b><br>" +
+            "Email: <b>" + (cbotData.email || "") + "</b><br>" +
+            "Phone: <b>" + (cbotData.phone || "\u2014") + "</b><br>" +
+            "Village: <b>" + (cbotData.village || "") + "</b>, State: <b>" + (cbotData.state || "") + "</b><br><br>" +
+            "Type <b>yes</b> to submit, or <b>no</b> to start over.";
+        cbotBotMsg(summary);
+        cbotStep = 99;
+        btn.disabled = false;
+        return;
+    }
+
+    cbotBotMsg(next.prompt);
+    btn.disabled = false;
+}
+
+async function cbotSubmit() {
+    const btn = document.getElementById("cbot-send-btn");
+    btn.disabled = true;
+    cbotBotMsg("\u23F3 Submitting request and running AI verification...");
+
+    try {
+        const res = await fetch("/api/auth/registration-requests/submit/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(cbotData)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Submission failed");
+
+        const score = data.ai_score;
+        const label = data.ai_label;
+        const color = score >= 80 ? "green" : score >= 50 ? "yellow" : "red";
+        const emoji = score >= 80 ? "\u2705" : score >= 50 ? "\u26A0\uFE0F" : "\u{1F6A8}";
+        const tc    = color === "green" ? "#16a34a" : color === "yellow" ? "#d97706" : "#b91c1c";
+
+        const scoreHtml =
+            "<div class=\"ai-score-card\">" +
+            "<b>&#x1F916; AI Genuineness Analysis</b><br>" +
+            "<div class=\"ai-score-bar\"><div class=\"ai-score-fill " + color + "\" style=\"width:" + score + "%\"></div></div>" +
+            "<span style=\"color:" + tc + ";font-weight:700\">" + emoji + " " + score + "% &mdash; " + label + "</span>" +
+            "</div>";
+
+        cbotBotMsg("\u{1F389} <b>Request submitted successfully!</b><br><br>" + scoreHtml +
+            "<br>\u{1F4CC} Your request is now with the <b>Village Admin</b> for review.<br>" +
+            "Once approved it moves to the <b>Voter Administrative</b> for final clearance.<br>" +
+            "You will then be added to the Voter Roll and can register online. \u2705");
+
+        cbotSystemMsg("\u2705 Request ID: " + data.request_id + " &mdash; Note this for your reference.");
+
+        cbotStep = 0; cbotData = {};
+        document.getElementById("cbot-input").disabled = true;
+        btn.disabled = true;
+
+    } catch(err) {
+        cbotBotMsg("\u274C " + (err.message || "Submission failed. Please try again."));
+        cbotStep = 99;
+        btn.disabled = false;
+    }
+}
+</script>
+
 </body>
 </html>

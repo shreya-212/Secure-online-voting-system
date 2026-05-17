@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import User, OTP, VoterVerification, VoterRoll, VillageAdmin
+from .models import User, OTP, VoterVerification, VoterRoll, VillageAdmin, RegistrationRequest
 
 class VoterRollSerializer(serializers.ModelSerializer):
     class Meta:
@@ -60,6 +60,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         if user.role == 'admin':
             user.is_staff = True
             user.is_superuser = True
+        elif user.role == 'officer':
+            user.is_staff = True
             
         user.save()
         # Mark this roll entry as registered
@@ -153,3 +155,34 @@ class VoterVerificationSerializer(serializers.ModelSerializer):
         # Auto-approve (in production replace with manual admin review)
         instance.approve()
         return instance
+
+
+class RegistrationRequestSerializer(serializers.ModelSerializer):
+    """Full serializer for RegistrationRequest — used by admin views."""
+
+    class Meta:
+        model = RegistrationRequest
+        fields = '__all__'
+        read_only_fields = ['status', 'ai_score', 'ai_details',
+                            'created_at', 'updated_at', 'forwarded_at', 'resolved_at']
+
+
+class RegistrationRequestSubmitSerializer(serializers.Serializer):
+    """Serializer for public chatbot submission — no auth required."""
+    voter_id      = serializers.CharField(max_length=30)
+    aadhaar_last4 = serializers.CharField(max_length=4)
+    full_name     = serializers.CharField(max_length=150)
+    date_of_birth = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    email         = serializers.EmailField()
+    phone         = serializers.CharField(max_length=15, required=False, allow_blank=True)
+    village       = serializers.CharField(max_length=100)
+    district      = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    state         = serializers.CharField(max_length=100)
+
+    def validate_aadhaar_last4(self, value):
+        if not value.isdigit() or len(value) != 4:
+            raise serializers.ValidationError('Must be exactly 4 numeric digits.')
+        return value
+
+    def validate_voter_id(self, value):
+        return value.strip().upper()

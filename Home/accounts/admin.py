@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, OTP, VoterVerification, Constituency, Assembly, Village, Booth, VoterRoll, VillageAdmin
+from .models import User, OTP, VoterVerification, Constituency, Assembly, Village, Booth, VoterRoll, VillageAdmin, RegistrationRequest
 
 @admin.register(Constituency)
 class ConstituencyAdmin(admin.ModelAdmin):
@@ -43,3 +43,10 @@ class VillageAdminModelAdmin(admin.ModelAdmin):
     list_display = ('admin_id', 'full_name', 'email', 'village', 'state', 'designated_role', 'is_registered')
     list_filter = ('state', 'designated_role', 'is_registered')
     search_fields = ('admin_id', 'full_name', 'email')
+
+@admin.register(RegistrationRequest)
+class RegistrationRequestAdmin(admin.ModelAdmin):
+    list_display = ('full_name', 'voter_id', 'email', 'village', 'state', 'status', 'ai_score', 'created_at')
+    list_filter = ('status', 'state')
+    search_fields = ('voter_id', 'full_name', 'email')
+    readonly_fields = ('ai_score', 'ai_details', 'created_at', 'updated_at', 'forwarded_at', 'resolved_at')
